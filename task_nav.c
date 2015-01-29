@@ -29,46 +29,75 @@ $Date: 2009-11-02 00:45:07-08 $
 // Our headers
 #include "rascal.h"
 
+#define NEWTONS	0.001
+
 velocity vDesire;
 velocity rSense_I;
 velocity v;
 parameters params;
 
+// all possible thruster combinations
+static float BThrust[3][11] = {{},
+                               {},
+                               {}};
+
+static float deltaVB[3][11] = {{},
+                               {},
+                               {}};
+
+// used in yHoldPotential
 int sign(float x) {
   if(x > 0) return 1;
   else if(x == 0) return 0;
   else return -1;
 }
 
-velocity yHoldPotential(velocity rSense_I, velocity v, parameters params) {
-  velocity vel_Des_I;
-  vel_Des_I.x = 0.0;
-  vel_Des_I.y = 0.0;
-  vel_Des_I.z = 0.0;
+// function used in select thruster to calculate vErr_B
+// -CItoB * (POSE_DESIRE - POSE_EST)
+void matrix_mul_CItoBxPOSE(float matrix1[][3], float matrix2[], float multiply[])
+{
+  int c, d;
+  float sum;
+ 
+    for ( c = 0 ; c < 3 ; c++ ) {
+      for ( d = 0 ; d < 3 ; d++ ){
+        sum = sum + matrix1[c][d] * matrix2[d];
+      }  
+ 
+      multiply[c] = sum;
+      sum = 0; 
+    }
+}
 
-  float yError = rSense_I.y - params.ydes;
+// current POSE_EST
+void yHoldPotential(parameters params) {
+
+  float yError = POSE_EST.y - params.ydes;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params.xCruise * O;
 
-  vel_Des_I.x = -(rSense_I.x - xDesire) / 250;
-  vel_Des_I.y = -(3/2) * params.w * rSense_I.x;
+  POSE_DESIRED.xdot = -(POSE_EST.x - xDesire) / 250;
+  POSE_DESIRED.ydot = -(3/2) * params.w * POSE_EST.x;
 
   if(fabsf(params.zdes) > 0.001) {
-    if((fabsf(rSense_I.z) / params.zdes) > 1) {
-      vel_Des_I.z = -.01 * sign(rSense_I.z);
+    if((fabsf(POSE_EST.z) / params.zdes) > 1) {
+      POSE_DESIRED.zdot = -.01 * sign(POSE_EST.z);
     } else {
-      float t_phiz = sign(v.z) * (1/params.w) * acosf(rSense_I.z) / params.zdes;
-      vel_Des_I.z = params.w * params.zdes * sinf(params.w * t_phiz);
+      float t_phiz = sign(POSE_EST.zdot) * (1/params.w) * acosf(POSE_EST.z) / params.zdes;
+      POSE_DESIRED.zdot = params.w * params.zdes * sinf(params.w * t_phiz);
     }
   }
-  return vel_Des_I;
 }
 
-/*
-int selectThruster(velocity rSense_I, velocity v, deltaVoptions_B, parameters params, C_ItoB) {
-  //TBD
+// current POSE_EST
+int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
+  int numThrustOptions = 11;
+  yHoldPotential(params);
+  float vErr_B[3];
+  
+  return 0; 
 }
-*/
+
 
 void task_nav(void) {
   rSense_I.x = 0.0033;

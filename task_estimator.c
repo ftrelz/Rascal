@@ -140,7 +140,7 @@ void matrix_mul_s_hat_prev(float matrix1[][6], float matrix2[], float multiply[]
     }
 }
 
-// to be completed
+// to be completed, Lxy not determined
 void matrix_mul_Lxy(float matrix1[][3], int rows1, int col1, float matrix2[][1], int rows2, int col2, float multiply[][1])
 {
   int c, d, k;
@@ -194,6 +194,8 @@ void poseStructToArray()
   //TBD
 }
 
+
+
 void task_estimator(void) {
   
   // defines and inits POSE_EST
@@ -221,7 +223,7 @@ void task_estimator(void) {
   yi = 0.0;
   zi = 0.0;
 
-  static float LxCd[6][6], Ad_LxCd[6][6], Ad_LxCdxs_hat_prev[6], Bd_Ixthrusterchoice[6][1], Lxy[6][1], s_hat_prev[6];
+  static float LxCd[6][6], Ad_LxCd[6][6], Ad_LxCdxs_hat_prev[6], Bd_Ixthrusterchoice[6], Lxy[6], s_hat_prev[6];
 
   matrix_mul_LxCd(L, rowsL, colsL, Cd, rowsCd, colsCd, LxCd);
   matrix_sub(Ad, LxCd, Ad_LxCd);

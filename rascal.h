@@ -41,6 +41,7 @@ typedef struct {
 // declare structs
 extern pose POSE_BOEING;
 extern pose POSE_EST;
+extern pose POSE_EST_PREV;
 extern pose POSE_DESIRED;
 
 //extern pose POSE_IMG
