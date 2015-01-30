@@ -9,6 +9,7 @@ typedef struct {
   float q2;
   float q3;
   float q4;
+  // quaternion velocities
   float q1dot;
   float q2dot;
   float q3dot;

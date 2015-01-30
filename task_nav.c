@@ -45,11 +45,44 @@ static float deltaVB[3][11] = {{},
                                {},
                                {}};
 
+static float CItoB[3][3] = {{0.0000, 1.000, 0.0000},
+                            {-1.0000, 0.0000, 0.0000},
+                            {0.0000, 0.0000, 1.0000}};
+
 // used in yHoldPotential
 int sign(float x) {
   if(x > 0) return 1;
   else if(x == 0) return 0;
   else return -1;
+}
+
+void dc2q()
+{
+
+}
+
+void q2dc(float CItoB[][3])
+{
+  // find in q2dc line 13, identity matrix
+  const float eye[3][3] = {{1.000, 0.000, 0.000},
+                     {0.000, 1.000, 0.000},
+                     {0.000, 0.000, 1.000}};
+  // find in q2dc line 12
+  const float Q[3][3] = {{0, -POSE_EST.q3, POSE_EST.q2},
+                   {POSE_EST.q3, 0, -POSE_EST.q1},
+                   {-POSE_EST.q2, POSE_EST.q1, 0}};
+  float ans[3][3];
+  float twoqq = 2 * ((POSE_EST.q1 * POSE_EST.q1) + (POSE_EST.q2 * POSE_EST.q2) + (POSE_EST.q3 * POSE_EST.q3));
+  int i, j;
+  for(i = 0; i < 3; i++)
+  {
+    for(j = 0; j < 3; j++)
+    {
+      ans[i][j] = (2 * (POSE_EST.q4 * POSE_EST.q4) - 1) * eye[i][j];
+      ans[i][j] = ans[i][j] + twoqq - ((2*POSE_EST.q4)*Q[i][j]);
+      CItoB[i][j] = ans[i][j];
+    }
+  }
 }
 
 // function used in select thruster to calculate vErr_B
@@ -71,7 +104,6 @@ void matrix_mul_CItoBxPOSE(float matrix1[][3], float matrix2[], float multiply[]
 
 // current POSE_EST
 void yHoldPotential(parameters params) {
-
   float yError = POSE_EST.y - params.ydes;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params.xCruise * O;
@@ -89,7 +121,7 @@ void yHoldPotential(parameters params) {
   }
 }
 
-// current POSE_EST
+// current POSE_EST -- tbd
 int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
   int numThrustOptions = 11;
   yHoldPotential(params);
@@ -100,24 +132,30 @@ int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
 
 
 void task_nav(void) {
+  // might need to change these to POSE_EST values
   rSense_I.x = 0.0033;
   rSense_I.y = -0.0027;
   rSense_I.z = 0.0;
   v.x = 0.0016;
   v.y = -0.0027;
   v.z = 0.0;
-  params.w = 0.0012;
-  params.verror = 0.00000225;
+  params.w = 0.0012;  /* (2*pi)/orbitPeriod in rad/s */
+  params.verror = 0.00000225; /* 0.0015^2 in m/s */
   params.xdes = 0.0;
   params.ydes = 10.0;
   params.zdes = 0.0;
-  params.xCruise = 10.0;
+  params.xCruise = 10.0; /* next orbit location (orbit transfer location) */
 
+  
+ 
   static char* prpCMD; //static char to receive "message" from external_cmds
   while(1) {
     OS_Delay(250);
     
-    char tmp[150];
+    q2dc(CItoB);
+    Nop();
+    Nop();
+    //char tmp[150];
     //vDesire = yHoldPotential(rSense_I, v, params);
     
     //sprintf(tmp, "vDesire x: %f, y: %f, z: %f\r\n", vDesire);

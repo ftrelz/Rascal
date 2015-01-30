@@ -161,7 +161,7 @@ void matrix_mul_Lxy(float matrix1[][3], int rows1, int col1, float matrix2[][1],
     }
 }
 
-/* subtracts to 6x6 matrices and stores result in 3rd matrix */
+/* subtracts two 6x6 matrices and stores result in 3rd matrix */
 void matrix_sub(float matrix1[][6], float matrix2[][6], float answer[][6])
 {
   int i, j;
@@ -199,10 +199,11 @@ void poseStructToArray()
 void task_estimator(void) {
   
   // defines and inits POSE_EST
-  POSE_EST.q1=0.0;
-  POSE_EST.q2=0.0;
-  POSE_EST.q3=0.0;
-  POSE_EST.q4=0.0;
+  //intial values for quaternion part of POSE_EST taken from line 84 of Sat3DDeliverable
+  POSE_EST.q1 = 0.000;
+  POSE_EST.q2 = 0.000;
+  POSE_EST.q3 = 0.7071;
+  POSE_EST.q4 = 0.7071;
   POSE_EST.q1dot = 0.0;
   POSE_EST.q2dot = 0.0;
   POSE_EST.q3dot = 0.0;
