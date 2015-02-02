@@ -35,11 +35,12 @@ velocity vDesire;
 velocity rSense_I;
 velocity v;
 parameters params;
+pose POSE_DESIRED;
 
 // all possible thruster combinations
-static float BThrust[3][11] = {{},
-                               {},
-                               {}};
+static float BThrust[3][11] = {{0.000, 1.000, -1.000, 0.000, 0.000, 0.000, 0.000, 1.000, 1.000, -1.000, -1.000},
+                               {0.000, 0.000, 0.000, 1.000, -1.000, 0.000, 0.000, 1.000, -1.000, 1.000, -1.000},
+                               {0.000, 0.000, 0.000, 0.000, 0.000, 1.000, -1.000, 0.000, 0.000, 0.000, 0.000}};
 
 static float deltaVB[3][11] = {{},
                                {},
@@ -48,6 +49,19 @@ static float deltaVB[3][11] = {{},
 static float CItoB[3][3] = {{0.0000, 1.000, 0.0000},
                             {-1.0000, 0.0000, 0.0000},
                             {0.0000, 0.0000, 1.0000}};
+
+static float I_BB[3][3] = {{0.100, 0.000, 0.000},
+                           {0.000, 0.100, 0.000},
+                           {0.000, 0.000, 0.100}};
+
+static float omega_BI[3] = {0.100, -0.100, 0.500};
+
+static float H_B[3];
+
+static float dqdt[4];
+
+// holds q values of POSE_EST for purposes of matrix multiplication
+static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
 
 // used in yHoldPotential
 int sign(float x) {
@@ -65,8 +79,8 @@ void q2dc(float CItoB[][3])
 {
   // find in q2dc line 13, identity matrix
   const float eye[3][3] = {{1.000, 0.000, 0.000},
-                     {0.000, 1.000, 0.000},
-                     {0.000, 0.000, 1.000}};
+                           {0.000, 1.000, 0.000},
+                           {0.000, 0.000, 1.000}};
   // find in q2dc line 12
   const float Q[3][3] = {{0, -POSE_EST.q3, POSE_EST.q2},
                    {POSE_EST.q3, 0, -POSE_EST.q1},
@@ -84,6 +98,84 @@ void q2dc(float CItoB[][3])
     }
   }
 }
+
+// Calculates inital values for dqdt
+// dqdt = qdot(q(:,i), omega_BI(:,i));
+// q = POSE_EST_q_values
+// qdot.m in matlab
+void output_dqdt(float dqdt[], omega_BI[], POSE_EST_q_values[])
+{
+  float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
+                              {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
+                              {omega_BI[1], -omega_BI[0], 0.000, omega_BI[2]},
+                              {-omega_BI[0], -omega_BI[1], -omega_BI[2], 0.000}};
+
+  int c, d;
+  float sum;
+ 
+    for ( c = 0 ; c < 4 ; c++ ) {
+      for ( d = 0 ; d < 4 ; d++ ){
+        sum = sum + (0.5 * omega_matrix[c][d] * POSE_EST_q_values[d]);
+      }
+
+      dqdt[c] = sum;
+      sum = 0; 
+    }
+}
+
+// "Returns" updated q
+// need to figure out expm() from matlab code
+// see: q(:,i+1) = qdot(q(:,i), omega_BI(:,i+1), dt);
+// qdot.m in matlab
+void output_q(float POSE_EST_q_values[], omega_BI[])
+{
+  float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
+                              {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
+                              {omega_BI[1], -omega_BI[0], 0.000, omega_BI[2]},
+                              {-omega_BI[0], -omega_BI[1], -omega_BI[2], 0.000}};
+
+  float temp_q_values[4];
+
+  // need to figure out exmp(omega_matrix) for this part
+  // expm(0.5*omega_matrix*time)*q; found in qdot.m
+  // then use multiplication loop below to multiply q * result of expm
+
+  int c, d;
+  float sum;
+ 
+    for ( c = 0 ; c < 4 ; c++ ) {
+      for ( d = 0 ; d < 4 ; d++ ){
+        sum = sum + (0.5 * omega_matrix[c][d] * POSE_EST_q_values[d]);
+      }
+
+      temp_q_values[c] = sum;
+      sum = 0; 
+    }
+  
+  // assigns new q values into POSE
+  POSE_EST.q1 = temp_q_values[0];
+  POSE_EST.q2 = temp_q_values[1];
+  POSE_EST.q3 = temp_q_values[2];
+  POSE_EST.q4 = temp_q_values[3];
+}
+
+// Calculates inital values for H_B
+void I_BBxomega_BI(float H_B[], float I_BB[][3], float omega_BI[])
+{
+  int c, d;
+  float sum;
+ 
+    for ( c = 0 ; c < 3 ; c++ ) {
+      for ( d = 0 ; d < 3 ; d++ ){
+        sum = sum + I_BB[c][d] * omega_BI[d];
+      }  
+ 
+      H_B[c] = sum;
+      sum = 0; 
+    }
+}
+
+
 
 // function used in select thruster to calculate vErr_B
 // -CItoB * (POSE_DESIRE - POSE_EST)
@@ -146,7 +238,23 @@ void task_nav(void) {
   params.zdes = 0.0;
   params.xCruise = 10.0; /* next orbit location (orbit transfer location) */
 
-  
+  // defines and inits POSE_DESIRED
+  POSE_DESIRED.q1 = 0.0;
+  POSE_DESIRED.q2 = 0.0;
+  POSE_DESIRED.q3 = 0.0;
+  POSE_DESIRED.q4 = 0.0;
+  POSE_DESIRED.q1dot = 0.0;
+  POSE_DESIRED.q2dot = 0.0;
+  POSE_DESIRED.q3dot = 0.0;
+  POSE_DESIRED.q4dot = 0.0;
+  POSE_DESIRED.x = 0.0;
+  POSE_DESIRED.y = 0.0;
+  POSE_DESIRED.z = 0.0;
+  POSE_DESIRED.xdot = 0.0;
+  POSE_DESIRED.ydot = 0.0;
+  POSE_DESIRED.zdot = 0.0;
+
+
  
   static char* prpCMD; //static char to receive "message" from external_cmds
   while(1) {

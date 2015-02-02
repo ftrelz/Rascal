@@ -79,6 +79,9 @@ float estimator(pose POSE_EST_PREVIOUS, thrusterChoice, pose POSE_IMG, pose POSE
   static float s_hat[6] = {0, 0, 0, 0, 0, 0};  //also POSE_EST
   static float s_hat_previous[6] = {0, 0, 0, 0, 0, 0};
   
+  // holds q values of POSE_EST for purposes of matrix multiplication
+  static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
+  
 
 /* Multiplies L (6x3) matrix with (3x6) Cd matrix. Result is LxCd (6x6) matrix */
 void matrix_mul_LxCd(float matrix1[][3], int rows1, int col1, float matrix2[][6], int rows2, int col2, float multiply[][6])
@@ -188,13 +191,6 @@ void matrix_add_s_hat(float matrix1[6], float matrix2[6], float matrix3[6], floa
     answer[i] = matrix1[i] + matrix2[i] + matrix3[i];
   }
 }
-
-void poseStructToArray()
-{
-  //TBD
-}
-
-
 
 void task_estimator(void) {
   

@@ -32,7 +32,6 @@ $Date: 2009-11-02 00:45:07-08 $
 
 // defines POSE_BOEING from rascal.h
 pose POSE_BOEING;
-pose POSE_DESIRED;
 
 // Other tasks
 
@@ -181,14 +180,7 @@ void task_externalcmds(void) {
     POSE_BOEING.q3=0.0;
     POSE_BOEING.q4=0.0;
 	
-    // defines and inits POSE_DESIRED
-    POSE_DESIRED.x=0.0;
-    POSE_DESIRED.y=0.0;
-    POSE_DESIRED.z=0.0;
-    POSE_DESIRED.q1=0.0;
-    POSE_DESIRED.q2=0.0;
-    POSE_DESIRED.q3=0.0;
-    POSE_DESIRED.q4=0.0;
+
 
 	while(1) {
         // test for POSE_BOEING
