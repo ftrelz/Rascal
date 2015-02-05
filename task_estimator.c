@@ -71,16 +71,17 @@ float estimator(pose POSE_EST_PREVIOUS, thrusterChoice, pose POSE_IMG, pose POSE
   static int rowsCd = 3;
   static int colsCd = 6;
   static float Cd[3][6] = {{1, 0, 0, 0, 0, 0},
-                         {0, 1, 0, 0, 0, 0},
-                         {0, 0, 1, 0, 0, 0}};
+                           {0, 1, 0, 0, 0, 0},
+                           {0, 0, 1, 0, 0, 0}};
 
   static int rows_s_hat_prev = 6;
   static int cols_s_hat_prev = 1;
   static float s_hat[6] = {0, 0, 0, 0, 0, 0};  //also POSE_EST
   static float s_hat_previous[6] = {0, 0, 0, 0, 0, 0};
   
+  // find a new way
   // holds q values of POSE_EST for purposes of matrix multiplication
-  static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
+  // static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
   
 
 /* Multiplies L (6x3) matrix with (3x6) Cd matrix. Result is LxCd (6x6) matrix */

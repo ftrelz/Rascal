@@ -60,8 +60,9 @@ static float H_B[3];
 
 static float dqdt[4];
 
+// find another way
 // holds q values of POSE_EST for purposes of matrix multiplication
-static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
+// static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
 
 // used in yHoldPotential
 int sign(float x) {
@@ -103,7 +104,7 @@ void q2dc(float CItoB[][3])
 // dqdt = qdot(q(:,i), omega_BI(:,i));
 // q = POSE_EST_q_values
 // qdot.m in matlab
-void output_dqdt(float dqdt[], omega_BI[], POSE_EST_q_values[])
+void output_dqdt(float dqdt[], float omega_BI[], float POSE_EST_q_values[])
 {
   float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
                               {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
@@ -127,7 +128,7 @@ void output_dqdt(float dqdt[], omega_BI[], POSE_EST_q_values[])
 // need to figure out expm() from matlab code
 // see: q(:,i+1) = qdot(q(:,i), omega_BI(:,i+1), dt);
 // qdot.m in matlab
-void output_q(float POSE_EST_q_values[], omega_BI[])
+void output_q(float POSE_EST_q_values[], float omega_BI[])
 {
   float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
                               {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
