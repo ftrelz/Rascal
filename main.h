@@ -22,7 +22,7 @@ $Date: 2010-02-13 13:17:58-08 $
 #define STR_APP_NAME          "test\\test1 application"
 #define STR_VERSION           "Built on " __DATE__ " at " __TIME__ 
 #define STR_WARNING           "WARNING: Use 'z' command with caution -- refer to project's abstract.txt"
-#define STR_BAUD_RATE         "9600"
+#define STR_BAUD_RATE         "58800"
 #define STR_1TAB              "\t"
 #define STR_2TABS             "\t\t"
 #define STR_CRLF              "\r\n"

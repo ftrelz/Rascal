@@ -36,6 +36,7 @@ velocity rSense_I;
 velocity v;
 parameters params;
 pose POSE_DESIRED;
+thrusterinfo THRUSTER_INFO;
 
 // all possible thruster combinations
 static float BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
@@ -179,15 +180,22 @@ void I_BBxomega_BI(float H_B[], float I_BB[][3], float omega_BI[])
 
 
 // function used in select thruster to calculate vErr_B
-// -CItoB * (POSE_DESIRE - POSE_EST)
-void matrix_mul_CItoBxPOSE(float matrix1[][3], float matrix2[], float multiply[])
+// -CItoB * (POSE_DESIRE - POSE_IMG)
+void matrix_mul_CItoBxPOSE(float matrix1[][3], float multiply[])
 {
   int c, d;
+
+  // used to multiply array values by struct values
+  float POSE_values[3];
   float sum;
- 
+
+  POSE_values[0] = POSE_DESIRED.xi - POSE_IMG.xi;
+  POSE_values[1] = POSE_DESIRED.yi - POSE_IMG.yi;
+  POSE_values[2] = POSE_DESIRED.zi - POSE_IMG.zi;
+
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
-        sum = sum + matrix1[c][d] * matrix2[d];
+        sum = sum + matrix1[c][d] * POSE_values[d];
       }  
  
       multiply[c] = sum;
@@ -195,32 +203,64 @@ void matrix_mul_CItoBxPOSE(float matrix1[][3], float matrix2[], float multiply[]
     }
 }
 
-// current POSE_EST
 void yHoldPotential(parameters params) {
-  float yError = POSE_EST.y - params.ydes;
+  float yError = POSE_IMG.yi - POSE_DESIRED.yi;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params.xCruise * O;
 
-  POSE_DESIRED.xdot = -(POSE_EST.x - xDesire) / 250;
-  POSE_DESIRED.ydot = -(3/2) * params.w * POSE_EST.x;
+  POSE_DESIRED.xidot = -(POSE_IMG.xi - xDesire) / 250;
+  POSE_DESIRED.yidot = -(3/2) * params.w * POSE_IMG.xi;
 
-  if(fabsf(params.zdes) > 0.001) {
-    if((fabsf(POSE_EST.z) / params.zdes) > 1) {
-      POSE_DESIRED.zdot = -.01 * sign(POSE_EST.z);
+  if(fabsf(POSE_DESIRED.zi) > 0.001) {
+    if((fabsf(POSE_IMG.zi) / POSE_DESIRED.zi) > 1) {
+      POSE_DESIRED.zidot = -.01 * sign(POSE_IMG.zi);
     } else {
-      float t_phiz = sign(POSE_EST.zdot) * (1/params.w) * acosf(POSE_EST.z) / params.zdes;
-      POSE_DESIRED.zdot = params.w * params.zdes * sinf(params.w * t_phiz);
+      float t_phiz = sign(POSE_IMG.zidot) * (1/params.w) * acosf(POSE_IMG.zi) / POSE_DESIRED.zi;
+      POSE_DESIRED.zidot = params.w * POSE_DESIRED.zi * sinf(params.w * t_phiz);
     }
   }
+}
+
+void matrix_mul_vErr_BxdeltaVB(float matrix1[], float matrix2[][11], float score[], int j)
+{
+  int c;
+  float sum;
+  
+  for ( c = 0 ; c < 3 ; c++ ) {
+    sum += matrix1[c] * matrix2[j][c];
+  }
+  sum *=2;
+  for (c = 0; c < 3; c++) {
+     score[c] = sum + powf(matrix2[j][c], 2.00);
+  }
+  
 }
 
 // current POSE_EST -- tbd
 int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
   int numThrustOptions = 11;
+  float score[3];
+  float bestScore[3];
   yHoldPotential(params);
   float vErr_B[3];
+  matrix_mul_CItoBxPOSE(C_ItoB, vErr_B);
+  int bestThruster = 0; // no thrust option
+  bestScore[0] = -params.verror; // score if we dont thrust
+  bestScore[1] = -params.verror;
+  bestScore[2] = -params.verror;
+  int j;
+  for(j = 1; j < numThrustOptions; j++) {
+    matrix_mul_vErr_BxdeltaVB(vErr_B, deltaVB, score, j);
+    if ((score[0] < bestScore[0]) && (score[1] < bestScore[1]) && (score[2] < bestScore[2])) {
+      bestThruster = j;
+      bestScore[0] = score[0];
+      bestScore[1] = score[1];
+      bestScore[2] = score[2];
+    } 
+    
+  }
   
-  return 0; 
+  return bestThruster; 
 }
 
 
@@ -248,22 +288,32 @@ void task_nav(void) {
   POSE_DESIRED.q2dot = 0.0;
   POSE_DESIRED.q3dot = 0.0;
   POSE_DESIRED.q4dot = 0.0;
-  POSE_DESIRED.x = 0.0;
-  POSE_DESIRED.y = 0.0;
-  POSE_DESIRED.z = 0.0;
-  POSE_DESIRED.xdot = 0.0;
-  POSE_DESIRED.ydot = 0.0;
-  POSE_DESIRED.zdot = 0.0;
+  POSE_DESIRED.xi = 0.0;
+  POSE_DESIRED.yi = 0.0;
+  POSE_DESIRED.zi = 0.0;
+  POSE_DESIRED.xidot = 0.0;
+  POSE_DESIRED.yidot = 0.0;
+  POSE_DESIRED.zidot = 0.0;
 
+  // defines and inits THRUSTER_INFO
+  THRUSTER_INFO.thruster_Azminus = 0;
+  THRUSTER_INFO.Azminustime = 0;
+  THRUSTER_INFO.thruster_Bxminus = 0;
+  THRUSTER_INFO.Bxminustime = 0;
+  THRUSTER_INFO.thruster_Cyminus = 0;
+  THRUSTER_INFO.Cyminustime = 0;
+  THRUSTER_INFO.thruster_Dzplus = 0;
+  THRUSTER_INFO.Dzplustime = 0;
+  THRUSTER_INFO.thruster_Explus = 0;
+  THRUSTER_INFO.Explustime = 0;
+  THRUSTER_INFO.thruster_Fyplus = 0;
+  THRUSTER_INFO.Fyplustime = 0;
 
  
   static char* prpCMD; //static char to receive "message" from external_cmds
   while(1) {
     OS_Delay(250);
     
-    q2dc(CItoB);
-    Nop();
-    Nop();
     //char tmp[150];
     //vDesire = yHoldPotential(rSense_I, v, params);
     
@@ -361,9 +411,9 @@ void task_nav(void) {
 
         /** tests for passing around POSEs **/
         /**
-        sprintf(tmp, "This is POSE_DESIRED.x: %d\r\n", POSE_DESIRED.x++);
+        sprintf(tmp, "This is POSE_DESIRED.xi: %d\r\n", POSE_DESIRED.xi++);
         csk_uart0_puts(tmp);
-        sprintf(tmp, "This is POSE_EST.x: %d\r\n", POSE_EST.x);
+        sprintf(tmp, "This is POSE_EST.xi: %d\r\n", POSE_EST.xi);
         csk_uart0_puts(tmp);
         **/
       }

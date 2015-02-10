@@ -23,6 +23,7 @@ $Date: 2010-03-28 19:40:15-08 $
 #include "task_missionclock.h"
 #include "task_estimator.h"
 #include "task_nav.h"
+#include "task_imager.h"
 
 // Pumpkin Salvo headers
 #include "salvo.h"
@@ -73,6 +74,7 @@ int main() {
   OSCreateTask(task_I2C,               TASK_I2C_P,               8);
   OSCreateTask(task_nav,               TASK_NAV_P,               1);
   OSCreateTask(task_estimator,         TASK_ESTIMATOR_P,         3);
+  OSCreateTask(task_imager,            TASK_IMAGER_P,            5);
 
   // Create events.
 //  OSCreateBinSem(RSRC_USB_MHX_IF_P, 1);    // Initially available

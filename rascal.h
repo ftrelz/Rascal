@@ -14,13 +14,30 @@ typedef struct {
   float q2dot;
   float q3dot;
   float q4dot;
-  float x;
-  float y;
-  float z;
-  float xdot;
-  float ydot;
-  float zdot;
+  // position values
+  float xi;
+  float yi;
+  float zi;
+  // velocity values
+  float xidot;
+  float yidot;
+  float zidot;
 } pose;
+
+typedef struct {
+  int thruster_Azminus; // thruster A points in -z direction in body coordinate system
+  int Azminustime; // time thruster A has burned for (in milliseconds)
+  int thruster_Bxminus; // thruster B points in -x direction in body coordinate system
+  int Bxminustime; // time thruster B has burned for (in milliseconds)
+  int thruster_Cyminus; // thruster C points in -y direction in body coordinate system
+  int Cyminustime; // time thruster C has burned for (in milliseconds)
+  int thruster_Dzplus; // thruster D points in +z direction in body coordinate system
+  int Dzplustime; // time thruster D has burned for (in milliseconds)
+  int thruster_Explus; // thruster E points in +x direction in body coordinate system
+  int Explustime; // time thruster E has burned for (in milliseconds)
+  int thruster_Fyplus; // thruster F points in +y direction in body coordinate system
+  int Fyplustime; // time thruster F has burned for (in milliseconds)
+} thrusterinfo;
 
 typedef struct {
   float x;
@@ -44,6 +61,9 @@ extern pose POSE_BOEING;
 extern pose POSE_EST;
 extern pose POSE_EST_PREV;
 extern pose POSE_DESIRED;
+extern pose POSE_ACTUAL;
+extern pose POSE_IMG;
+extern thrusterinfo THRUSTER_INFO;
 
 //extern pose POSE_IMG
 

@@ -123,20 +123,17 @@ void BroadcastOrSaveN(char a[], char * fName, int num){
 //static int ZEROCLOCKINT=0;
 //static int IRONMANINT=0;
 
-void CMDS(char cmd[], char * saveName) {
+// This function takes and processes command sequences and passes them off accordingly
+void CMDS(char a[], char * saveName) {
 //	OSSignalBinSem(BINSEM_RAISEPOWERLEVEL_P); 
-	static char a[256];
-    memcpy(a, cmd, 256);
+	
     csk_uart0_puts("task_externalcmds:\t");
-	csk_uart0_puts(a);
-	csk_uart0_puts("\r\n");
 	char tmp[400]; 
-	int I;
-	for(I=0;I<1000;I++) Nop();
+	//int I;
+	//for(I=0;I<1000;I++) Nop();
 	if (a[0]=='\r' || a[0]=='\n' || a[0]==0) { 
 		return;
 	}
-    
     
     // Start command handling
 
@@ -151,42 +148,53 @@ void CMDS(char cmd[], char * saveName) {
           return;
         }
       }
-      //csk_uart0_puts("Got here!\r\n");
-      OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (a));  
+      char cmd[strlen(a)+1];
+      strcpy(cmd, a);
+      csk_uart0_puts(cmd);
+	  csk_uart0_puts("\r\n");
+      OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
       return;
-    }
+    } // End - 'PRP' command
+
+    
+
 	//At this point, no command has been recognized, as it would have returned if it had been.
 	char tmps[80];
 	sprintf(tmps, "%s{%s}", COMMAND_NO_JOY, a);
 	csk_uart0_puts(tmps);
 	BroadcastOrSave(tmps, saveName);
-//	HeTrans255Str(a);
-}
+    return;
+} // End - CMDS
 
 void task_externalcmds(void) {
-    char a[256];
+    char a[256]; // holds received command
     
     //task_nav msg test
   	//static char a[256]="PRP11111111500";
 
 	static unsigned int i=0;
-	
-    // defines and inits POSE_BOEING
-	POSE_BOEING.x=0.0;
-    POSE_BOEING.y=0.0;
-    POSE_BOEING.z=0.0;
-    POSE_BOEING.q1=0.0;
-    POSE_BOEING.q2=0.0;
-    POSE_BOEING.q3=0.0;
-    POSE_BOEING.q4=0.0;
-	
 
+  // defines and inits POSE_BOEING
+  POSE_BOEING.q1 = 0.0;
+  POSE_BOEING.q2 = 0.0;
+  POSE_BOEING.q3 = 0.0;
+  POSE_BOEING.q4 = 0.0;
+  POSE_BOEING.q1dot = 0.0;
+  POSE_BOEING.q2dot = 0.0;
+  POSE_BOEING.q3dot = 0.0;
+  POSE_BOEING.q4dot = 0.0;
+  POSE_BOEING.xi = 0.0;
+  POSE_BOEING.yi = 0.0;
+  POSE_BOEING.zi = 0.0;
+  POSE_BOEING.xidot = 0.0;
+  POSE_BOEING.yidot = 0.0;
+  POSE_BOEING.zidot = 0.0;
 
 	while(1) {
         // test for POSE_BOEING
         /** char str[40];
         csk_uart0_puts("\r\nPOSE_BOEING from CMDS:\r\n");
-        sprintf(str, "%d", POSE_BOEING.x++);
+        sprintf(str, "%d", POSE_BOEING.xi++);
         csk_uart0_puts("\r\nEND POSE_BOEING\r\n");
         csk_uart0_puts(str);
 		END POSE_BOEING TEST **/
@@ -207,8 +215,43 @@ void task_externalcmds(void) {
 			a[i]=0;
 		}  //END: Will wait until something is received, and store it in a.
 		
+        // Begins full propulsion tank purge - for shipment and ground testing!
+        if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='N') { // if a is PURGEON
+          // turns ON S1 and S2 solenoids AND ALL thrusters
+          csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
+          csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
+          csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
+          OS_Delay(10);
+          csk_io23_high(); csk_uart0_puts("A ON!\r\n");
+          //csk_io18_high(); csk_uart0_puts("B ON!\r\n");
+          csk_io17_high(); csk_uart0_puts("C ON!\r\n");
+          // csk_io21_high(); csk_uart0_puts("D ON!\r\n");
+          csk_io19_high(); csk_uart0_puts("E ON!\r\n");
+          //csk_io16_high(); csk_uart0_puts("F ON!\r\n");
+          
+        } // End 'PURGEON'
+
+        // Ends full propulsion tank purge - for shipment and ground testing!
+        else if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='F' && a[7]=='F') { // if a is PURGEOFF
+        
+        // turns OFF solenoids and thrusters
+        csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
+        csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");
+        OS_Delay(200);
+        csk_io23_low(); csk_uart0_puts("A OFF!\r\n");
+        //csk_io18_low(); csk_uart0_puts("B OFF!\r\n");
+        csk_io17_low(); csk_uart0_puts("C OFF!\r\n");
+        //csk_io21_low(); csk_uart0_puts("D OFF!\r\n");
+        csk_io19_low(); csk_uart0_puts("E OFF!\r\n");
+        //csk_io16_low(); csk_uart0_puts("F OFF!\r\n");
+        csk_uart0_puts("END - Full Propulsion Tank Purge!\r\n");
+        
+          
+      } // End 'PURGEOFF'
+      
+      else {
         CMDS(a, 0);
-       
+      }
         
 	}
 } /* task_externalcmds() */

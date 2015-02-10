@@ -34,7 +34,6 @@ $Date: 2009-11-02 00:45:07-08 $
 
 // defines POSE_EST from rascal.h
 pose POSE_EST;
-pose POSE_EST_PREV;
 
 /*
 float estimator(pose POSE_EST_PREVIOUS, thrusterChoice, pose POSE_IMG, pose POSE_BOEING) {
@@ -205,12 +204,12 @@ void task_estimator(void) {
   POSE_EST.q2dot = 0.0;
   POSE_EST.q3dot = 0.0;
   POSE_EST.q4dot = 0.0;
-  POSE_EST.x=0.0;
-  POSE_EST.y=0.0;
-  POSE_EST.z=0.0;
-  POSE_EST.xdot = 0.0;
-  POSE_EST.ydot = 0.0;
-  POSE_EST.zdot = 0.0;
+  POSE_EST.xi=0.0;
+  POSE_EST.yi=0.0;
+  POSE_EST.zi=0.0;
+  POSE_EST.xidot = 0.0;
+  POSE_EST.yidot = 0.0;
+  POSE_EST.zidot = 0.0;
   
   // defines static vars used for linear orbit matrices
   static float n, dt;
@@ -231,18 +230,7 @@ void task_estimator(void) {
   matrix_add_s_hat(Ad_LxCdxs_hat_prev, Bd_Ixthrusterchoice, Lxy, s_hat);
 
   while(1) {
-    // POSE_EST test
-    //OS_Delay(100);
-    //POSE_EST.x++;
-    //POSE_BOEING.x++;
-    
     OS_Delay(50);
-    
-    // inits s_hat_prev with values for testing
-    int i;
-    for (i=0; i < 6; i++){
-      s_hat_prev[i] = 1.0;
-    }
     
     matrix_mul_LxCd(L, rowsL, colsL, Cd, rowsCd, colsCd, LxCd);
     matrix_sub(Ad, LxCd, Ad_LxCd);
@@ -252,13 +240,13 @@ void task_estimator(void) {
 /*
     char str[100];
     csk_uart0_puts("\r\nPOSE_BOEING from EST:\r\n");
-    //sprintf(str, "%d,%d,%d,%d,%d,%d,%d\r\n", POSE_EST.x++, POSE_EST.y++, POSE_EST.z++,POSE_EST.q1++,POSE_EST.q2++,POSE_EST.q3++,POSE_EST.q4++);
-    sprintf(str, "%f,%f,%f,%f,%f,%f,%f\r\n", POSE_BOEING.x++, POSE_BOEING.y++, POSE_BOEING.z++,POSE_BOEING.q1++,POSE_BOEING.q2++,POSE_BOEING.q3++,POSE_BOEING.q4++);
-    //sprintf(str, "%d   %d", POSE_EST.x,POSE_BOEING.x);
+    //sprintf(str, "%d,%d,%d,%d,%d,%d,%d\r\n", POSE_EST.xi++, POSE_EST.yi++, POSE_EST.zi++,POSE_EST.q1++,POSE_EST.q2++,POSE_EST.q3++,POSE_EST.q4++);
+    sprintf(str, "%f,%f,%f,%f,%f,%f,%f\r\n", POSE_BOEING.xi++, POSE_BOEING.yi++, POSE_BOEING.zi++,POSE_BOEING.q1++,POSE_BOEING.q2++,POSE_BOEING.q3++,POSE_BOEING.q4++);
+    //sprintf(str, "%d   %d", POSE_EST.xi,POSE_BOEING.xi);
     csk_uart0_puts(str);
     csk_uart0_puts("END POSE_EST\r\n");
-    //csk_uart0_puts(STR_CRLF "POSE_BOEING.x: ");
-    //csk_uart0_puts((char *)POSE_EST.x);
+    //csk_uart0_puts(STR_CRLF "POSE_BOEING.xi: ");
+    //csk_uart0_puts((char *)POSE_EST.xi);
 */    
     /**END Tests for POSE **/
 

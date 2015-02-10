@@ -122,7 +122,7 @@ void init(void) {
 //  csk_uart1_open(UART_38400_N81_MAIN);
   csk_uart0_puts(STR_CRLF STR_CRLF);
   csk_uart0_puts("Pumpkin " STR_CSK_TARGET "." STR_CRLF);
-  csk_uart0_puts(STR_VERSION "." STR_CRLF "--Wesley Gardner, Joe Kirwen & Denana Vehab" STR_CRLF STR_CRLF);  
+  csk_uart0_puts(STR_VERSION "." STR_CRLF "--Fred Trelz, Donnie Utley, & Denana Vehab" STR_CRLF STR_CRLF);  
 //csk_uart0_puts(STR_WARNING "." STR_CRLF);
     
 } /* init() */
