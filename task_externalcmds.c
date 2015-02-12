@@ -129,11 +129,12 @@ void CMDS(char a[], char * saveName) {
 	
     csk_uart0_puts("task_externalcmds:\t");
 	char tmp[400]; 
-	//int I;
+	
+    /* Why is this Nop here??? */
+    //int I;
 	//for(I=0;I<1000;I++) Nop();
-	if (a[0]=='\r' || a[0]=='\n' || a[0]==0) { 
-		return;
-	}
+
+	if (a[0]=='\r' || a[0]=='\n' || a[0]==0) { return; }
     
     // Start command handling
 

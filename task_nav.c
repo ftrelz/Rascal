@@ -31,35 +31,20 @@ $Date: 2009-11-02 00:45:07-08 $
 
 #define NEWTONS	0.001
 
-velocity vDesire;
-velocity rSense_I;
-velocity v;
+//velocity vDesire;
+//velocity rSense_I;
+//velocity v;
 parameters params;
 pose POSE_DESIRED;
 thrusterinfo THRUSTER_INFO;
-
-// all possible thruster combinations
-static float BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
-                               {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
-                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000}};
-
-static float deltaVB[3][11] = {{0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, 0.0003, -0.0003, -0.0003},
-                               {0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0003, -0.0003, 0.0003, -0.0003},
-                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000}};
-
-static float CItoB[3][3] = {{0.0000, 1.000, 0.0000},
-                            {-1.0000, 0.0000, 0.0000},
-                            {0.0000, 0.0000, 1.0000}};
-
-static float I_BB[3][3] = {{0.1000, 0.0000, 0.0000},
-                           {0.0000, 0.1000, 0.0000},
-                           {0.0000, 0.0000, 0.1000}};
-
-static float omega_BI[3] = {0.1000, -0.1000, 0.5000};
-
+float C_ItoB[3][3];
+static float BThrust[3][11];
+//static float deltaVB[3][11];
+static float I_BB[3][3];
+static float omega_BI[3];
 static float H_B[3];
-
 static float dqdt[4];
+
 
 // find another way
 // holds q values of POSE_EST for purposes of matrix multiplication
@@ -77,7 +62,7 @@ void dc2q()
 
 }
 
-void q2dc(float CItoB[][3])
+void q2dc(float p_C_ItoB[][3])
 {
   // find in q2dc line 13, identity matrix
   const float eye[3][3] = {{1.000, 0.000, 0.000},
@@ -96,7 +81,7 @@ void q2dc(float CItoB[][3])
     {
       ans[i][j] = (2 * (POSE_EST.q4 * POSE_EST.q4) - 1) * eye[i][j];
       ans[i][j] = ans[i][j] + twoqq - ((2*POSE_EST.q4)*Q[i][j]);
-      CItoB[i][j] = ans[i][j];
+      p_C_ItoB[i][j] = ans[i][j];
     }
   }
 }
@@ -105,12 +90,12 @@ void q2dc(float CItoB[][3])
 // dqdt = qdot(q(:,i), omega_BI(:,i));
 // q = POSE_EST_q_values
 // qdot.m in matlab
-void output_dqdt(float dqdt[], float omega_BI[], float POSE_EST_q_values[])
+void output_dqdt(float p_dqdt[], float p_omega_BI[], float POSE_EST_q_values[])
 {
-  float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
-                              {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
-                              {omega_BI[1], -omega_BI[0], 0.000, omega_BI[2]},
-                              {-omega_BI[0], -omega_BI[1], -omega_BI[2], 0.000}};
+  float omega_matrix[4][4] = {{0.000, p_omega_BI[2], -p_omega_BI[1], p_omega_BI[0]},
+                              {-p_omega_BI[2], 0.000, p_omega_BI[0], p_omega_BI[1]},
+                              {p_omega_BI[1], -p_omega_BI[0], 0.000, p_omega_BI[2]},
+                              {-p_omega_BI[0], -p_omega_BI[1], -p_omega_BI[2], 0.000}};
 
   int c, d;
   float sum;
@@ -120,7 +105,7 @@ void output_dqdt(float dqdt[], float omega_BI[], float POSE_EST_q_values[])
         sum = sum + (0.5 * omega_matrix[c][d] * POSE_EST_q_values[d]);
       }
 
-      dqdt[c] = sum;
+      p_dqdt[c] = sum;
       sum = 0; 
     }
 }
@@ -129,12 +114,12 @@ void output_dqdt(float dqdt[], float omega_BI[], float POSE_EST_q_values[])
 // need to figure out expm() from matlab code
 // see: q(:,i+1) = qdot(q(:,i), omega_BI(:,i+1), dt);
 // qdot.m in matlab
-void output_q(float POSE_EST_q_values[], float omega_BI[])
+void output_q(float POSE_EST_q_values[], float p_omega_BI[])
 {
-  float omega_matrix[4][4] = {{0.000, omega_BI[2], -omega_BI[1], omega_BI[0]},
-                              {-omega_BI[2], 0.000, omega_BI[0], omega_BI[1]},
-                              {omega_BI[1], -omega_BI[0], 0.000, omega_BI[2]},
-                              {-omega_BI[0], -omega_BI[1], -omega_BI[2], 0.000}};
+  float omega_matrix[4][4] = {{0.000, p_omega_BI[2], -p_omega_BI[1], p_omega_BI[0]},
+                              {-p_omega_BI[2], 0.000, p_omega_BI[0], p_omega_BI[1]},
+                              {p_omega_BI[1], -p_omega_BI[0], 0.000, p_omega_BI[2]},
+                              {-p_omega_BI[0], -p_omega_BI[1], -p_omega_BI[2], 0.000}};
 
   float temp_q_values[4];
 
@@ -162,17 +147,17 @@ void output_q(float POSE_EST_q_values[], float omega_BI[])
 }
 
 // Calculates inital values for H_B
-void I_BBxomega_BI(float H_B[], float I_BB[][3], float omega_BI[])
+void I_BBxomega_BI(float p_H_B[], float p_I_BB[][3], float p_omega_BI[])
 {
   int c, d;
   float sum;
  
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
-        sum = sum + I_BB[c][d] * omega_BI[d];
+        sum = sum + p_I_BB[c][d] * p_omega_BI[d];
       }  
  
-      H_B[c] = sum;
+      p_H_B[c] = sum;
       sum = 0; 
     }
 }
@@ -180,22 +165,23 @@ void I_BBxomega_BI(float H_B[], float I_BB[][3], float omega_BI[])
 
 
 // function used in select thruster to calculate vErr_B
-// -CItoB * (POSE_DESIRE - POSE_IMG)
-void matrix_mul_CItoBxPOSE(float matrix1[][3], float multiply[])
+// -C_ItoB * (POSE_DESIRE - POSE_IMG)
+void matrix_mul_C_ItoBxPOSE(float matrix1[][3], float multiply[])
 {
   int c, d;
 
   // used to multiply array values by struct values
   float POSE_values[3];
   float sum;
+  sum = 0;
 
-  POSE_values[0] = POSE_DESIRED.xi - POSE_IMG.xi;
-  POSE_values[1] = POSE_DESIRED.yi - POSE_IMG.yi;
-  POSE_values[2] = POSE_DESIRED.zi - POSE_IMG.zi;
+  POSE_values[0] = POSE_DESIRED.xidot - POSE_IMG.xidot;
+  POSE_values[1] = POSE_DESIRED.yidot - POSE_IMG.yidot;
+  POSE_values[2] = POSE_DESIRED.zidot - POSE_IMG.zidot;
 
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
-        sum = sum + matrix1[c][d] * POSE_values[d];
+        sum = sum + (-matrix1[c][d] * POSE_values[d]);
       }  
  
       multiply[c] = sum;
@@ -203,7 +189,61 @@ void matrix_mul_CItoBxPOSE(float matrix1[][3], float multiply[])
     }
 }
 
-void yHoldPotential(parameters params) {
+
+void matrix_mul_vErr_BxdeltaVB(float matrix1[], float matrix2[][11], float p_score[], int p_j)
+{
+  int c;
+  float sum;
+  sum = 0;
+  
+  for ( c = 0 ; c < 3 ; c++ ) {
+    sum += matrix1[c] * matrix2[p_j][c];
+  }
+  sum *=2;
+  for (c = 0; c < 3; c++) {
+     p_score[c] = sum + powf(matrix2[p_j][c], 2.00);
+  }
+  
+}
+
+
+void yHoldPotential(parameters *params) {
+  float yError = POSE_IMG.yi - POSE_DESIRED.yi;
+  float O = (2/PI)*(atanf(yError/5));
+  float xDesire = params->xCruise * O;
+
+  POSE_DESIRED.xidot = -(POSE_IMG.xi - xDesire) / 250;
+  POSE_DESIRED.yidot = -(3/2) * params->w * POSE_IMG.xi;
+
+  if(fabsf(POSE_DESIRED.zi) > 0.001) {
+    if((fabsf(POSE_IMG.zi) / POSE_DESIRED.zi) > 1) {
+      POSE_DESIRED.zidot = -.01 * sign(POSE_IMG.zi);
+    } else {
+      float t_phiz = sign(POSE_IMG.zidot) * (1/params->w) * acosf(POSE_IMG.zi) / POSE_DESIRED.zi;
+      POSE_DESIRED.zidot = params->w * POSE_DESIRED.zi * sinf(params->w * t_phiz);
+    }
+  }
+}
+
+
+
+typedef struct _three_by_eleven {
+	float data[3][11];
+} three_by_eleven;
+
+typedef struct _three_by_three {
+  float data[3][3];
+} three_by_three;
+
+
+int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
+  int numThrustOptions = 11;
+  int c, d;
+  float score[3];
+  float bestScore[3];
+  //yHoldPotential(&params);
+
+/* Begin yHoldPotential */
   float yError = POSE_IMG.yi - POSE_DESIRED.yi;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params.xCruise * O;
@@ -219,38 +259,52 @@ void yHoldPotential(parameters params) {
       POSE_DESIRED.zidot = params.w * POSE_DESIRED.zi * sinf(params.w * t_phiz);
     }
   }
-}
+/* End yHoldPotential */
 
-void matrix_mul_vErr_BxdeltaVB(float matrix1[], float matrix2[][11], float score[], int j)
-{
-  int c;
-  float sum;
-  
-  for ( c = 0 ; c < 3 ; c++ ) {
-    sum += matrix1[c] * matrix2[j][c];
-  }
-  sum *=2;
-  for (c = 0; c < 3; c++) {
-     score[c] = sum + powf(matrix2[j][c], 2.00);
-  }
-  
-}
-
-// current POSE_EST -- tbd
-int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
-  int numThrustOptions = 11;
-  float score[3];
-  float bestScore[3];
-  yHoldPotential(params);
   float vErr_B[3];
-  matrix_mul_CItoBxPOSE(C_ItoB, vErr_B);
+
+  //matrix_mul_C_ItoBxPOSE(C_ItoB, vErr_B);
+/* Begin matrix_mul_C_ItoBxPOSE */
+  // used to multiply array values by struct values
+  float POSE_values[3];
+  float sum;
+  sum = 0;
+
+  POSE_values[0] = POSE_DESIRED.xidot - POSE_IMG.xidot;
+  POSE_values[1] = POSE_DESIRED.yidot - POSE_IMG.yidot;
+  POSE_values[2] = POSE_DESIRED.zidot - POSE_IMG.zidot;
+
+    for ( c = 0 ; c < 3 ; c++ ) {
+      for ( d = 0 ; d < 3 ; d++ ){
+        sum = sum + (-C_ItoB->data[c][d] * POSE_values[d]);
+      }  
+ 
+      vErr_B[c] = sum;
+      sum = 0; 
+    }
+/* End matrix_mul_C_ItoBxPOSE */
+
   int bestThruster = 0; // no thrust option
   bestScore[0] = -params.verror; // score if we dont thrust
   bestScore[1] = -params.verror;
   bestScore[2] = -params.verror;
   int j;
   for(j = 1; j < numThrustOptions; j++) {
-    matrix_mul_vErr_BxdeltaVB(vErr_B, deltaVB, score, j);
+
+    //matrix_mul_vErr_BxdeltaVB(vErr_B, deltaVB, score, j);
+/* Begin matrix_mul_vErr_BxdeltaVB */
+  
+  sum = 0;
+  
+  for ( c = 0 ; c < 3 ; c++ ) {
+    sum += vErr_B[c] * deltaVB->data[c][j];
+  }
+  sum *=2;
+  for (c = 0; c < 3; c++) {
+     score[c] = sum + powf(deltaVB->data[c][j], 2.00);
+  }
+/* End matrix_mul_vErr_BxdeltaVB */
+    
     if ((score[0] < bestScore[0]) && (score[1] < bestScore[1]) && (score[2] < bestScore[2])) {
       bestThruster = j;
       bestScore[0] = score[0];
@@ -266,20 +320,16 @@ int selectThruster(float deltaVB[][11], parameters params, float C_ItoB[][3]) {
 
 void task_nav(void) {
   // might need to change these to POSE_EST values
+  /*
   rSense_I.x = 0.0033;
   rSense_I.y = -0.0027;
   rSense_I.z = 0.0;
   v.x = 0.0016;
   v.y = -0.0027;
   v.z = 0.0;
-  params.w = 0.0012;  /* (2*pi)/orbitPeriod in rad/s */
-  params.verror = 0.00000225; /* 0.0015^2 in m/s */
-  params.xdes = 0.0;
-  params.ydes = 10.0;
-  params.zdes = 0.0;
-  params.xCruise = 10.0; /* next orbit location (orbit transfer location) */
+  */
 
-  // defines and inits POSE_DESIRED
+ // defines and inits POSE_DESIRED
   POSE_DESIRED.q1 = 0.0;
   POSE_DESIRED.q2 = 0.0;
   POSE_DESIRED.q3 = 0.0;
@@ -289,13 +339,20 @@ void task_nav(void) {
   POSE_DESIRED.q3dot = 0.0;
   POSE_DESIRED.q4dot = 0.0;
   POSE_DESIRED.xi = 0.0;
-  POSE_DESIRED.yi = 0.0;
+  POSE_DESIRED.yi = 10.0;
   POSE_DESIRED.zi = 0.0;
   POSE_DESIRED.xidot = 0.0;
   POSE_DESIRED.yidot = 0.0;
   POSE_DESIRED.zidot = 0.0;
 
-  // defines and inits THRUSTER_INFO
+  params.w = 0.0012;  /* (2*pi)/orbitPeriod in rad/s */
+  params.verror = 0.00000225; /* 0.0015^2 in m/s */
+  params.xdes = 0.0;
+  params.ydes = 10.0;
+  params.zdes = 0.0;
+  params.xCruise = 10.0; /* next orbit location (orbit transfer location) */
+
+// defines and inits THRUSTER_INFO
   THRUSTER_INFO.thruster_Azminus = 0;
   THRUSTER_INFO.Azminustime = 0;
   THRUSTER_INFO.thruster_Bxminus = 0;
@@ -309,11 +366,88 @@ void task_nav(void) {
   THRUSTER_INFO.thruster_Fyplus = 0;
   THRUSTER_INFO.Fyplustime = 0;
 
- 
+static float BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
+                               {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
+                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000}};
+
+static float tmp_deltaVB[3][11] = {{0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, 0.0003, -0.0003, -0.0003},
+                               {0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0003, -0.0003, 0.0003, -0.0003},
+                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000}};
+
+static three_by_eleven deltaVB;
+
+memcpy(deltaVB.data, tmp_deltaVB, sizeof(float[3][11]));
+
+// value for i=2 in Matlab sim
+/*
+static float tmp_C_ItoB[3][3] = {{-0.6733, 0.7070, 0.2164},
+                            {-0.7208, -0.6929, 0.0209},
+                            {0.1648, -0.1419, 0.9761}};
+*/
+static float tmp_C_ItoB[3][3] = {{0.9997, -0.0229, 0.0025},
+                            {0.0229, 0.9997, 0.0068},
+                            {-0.0027, -0.0067, 1.0000}};
+
+/*
+static float tmp_C_ItoB[3][3] = {{0.0000, 1.000, 0.0000},
+                            {-1.0000, 0.0000, 0.0000},
+                            {0.0000, 0.0000, 1.0000}};
+*/
+
+static three_by_three C_ItoB;
+
+memcpy(C_ItoB.data, tmp_C_ItoB, sizeof(float[3][3]));
+
+static float I_BB[3][3] = {{0.1000, 0.0000, 0.0000},
+                           {0.0000, 0.1000, 0.0000},
+                           {0.0000, 0.0000, 0.1000}};
+
+static float omega_BI[3] = {0.1000, -0.1000, 0.5000};
+
+static float H_B[3];
+
+static float dqdt[4];
+
+  
+
+  // all possible thruster combinations
+
+  
+static float tmp_BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
+                               {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
+                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000}};
+
+static three_by_eleven BThrust_1;
+
+memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
+
+/*
+  static float deltaVB_row0[] = {0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, 0.0003, -0.0003, -0.0003};
+  static float deltaVB_row1[] = {0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0003, -0.0003, 0.0003, -0.0003};
+  static float deltaVB_row2[] = {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000};
+  static float *deltaVB[3];
+  deltaVB[0] = deltaVB_row0;
+  deltaVB[1] = deltaVB_row1;
+  deltaVB[2] = deltaVB_row2;
+*/
+  
+
+  static int x;
+  //parameters *p_params = &params;
+  x = selectThruster(&deltaVB, &C_ItoB);
+ // x = selectThruster();
+  
+
   static char* prpCMD; //static char to receive "message" from external_cmds
+
   while(1) {
     OS_Delay(250);
-    
+    char tmp[20];
+    sprintf(tmp, "This is x: %d\r\n", x);
+    csk_uart0_puts(tmp);
+
+
+
     //char tmp[150];
     //vDesire = yHoldPotential(rSense_I, v, params);
     

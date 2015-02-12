@@ -39,11 +39,13 @@ typedef struct {
   int Fyplustime; // time thruster F has burned for (in milliseconds)
 } thrusterinfo;
 
+/*
 typedef struct {
   float x;
   float y;
   float z;
 } velocity;
+*/
 
 typedef struct {
   float w; // angular vel of orbit
@@ -66,6 +68,8 @@ extern pose POSE_IMG;
 extern thrusterinfo THRUSTER_INFO;
 
 //extern pose POSE_IMG
+
+extern float C_ItoB[3][3];
 
 
 #endif /*__rascal_h */
