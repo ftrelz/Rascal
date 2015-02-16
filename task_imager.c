@@ -26,12 +26,12 @@ void task_imager(void) {
   POSE_IMG.q2dot = 0.0;
   POSE_IMG.q3dot = 0.0;
   POSE_IMG.q4dot = 0.0;
-  POSE_IMG.xi = 0.00049968;
-  POSE_IMG.yi = -0.0000003876;
-  POSE_IMG.zi = 0.0;
-  POSE_IMG.xidot = 0.0009935;
-  POSE_IMG.yidot = -0.0000011628;
-  POSE_IMG.zidot = 0.0;
+  POSE_IMG.xi = 0.0000;
+  POSE_IMG.yi = 35.000;
+  POSE_IMG.zi = 2.3693;
+  POSE_IMG.xidot = 0.0009;
+  POSE_IMG.yidot = 0.0176;
+  POSE_IMG.zidot = -0.0018;
   
   while(1) {
     OS_Delay(250);

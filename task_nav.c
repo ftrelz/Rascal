@@ -249,7 +249,7 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
   float xDesire = params.xCruise * O;
 
   POSE_DESIRED.xidot = -(POSE_IMG.xi - xDesire) / 250;
-  POSE_DESIRED.yidot = -(3/2) * params.w * POSE_IMG.xi;
+  POSE_DESIRED.yidot = -(3.0/2.0) * params.w * POSE_IMG.xi;
 
   if(fabsf(POSE_DESIRED.zi) > 0.001) {
     if((fabsf(POSE_IMG.zi) / POSE_DESIRED.zi) > 1) {
@@ -339,7 +339,7 @@ void task_nav(void) {
   POSE_DESIRED.q3dot = 0.0;
   POSE_DESIRED.q4dot = 0.0;
   POSE_DESIRED.xi = 0.0;
-  POSE_DESIRED.yi = 10.0;
+  POSE_DESIRED.yi = 100.0;
   POSE_DESIRED.zi = 0.0;
   POSE_DESIRED.xidot = 0.0;
   POSE_DESIRED.yidot = 0.0;
@@ -370,23 +370,26 @@ static float BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000,
                                {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
                                {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000}};
 
-static float tmp_deltaVB[3][11] = {{0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, 0.0003, -0.0003, -0.0003},
-                               {0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0003, -0.0003, 0.0003, -0.0003},
-                               {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000}};
+                // Thrust Options:    0        1       2        3       4      5       6        7       8        9        10    BODY FRAME COORDINATES
+static float tmp_deltaVB[3][11] = {{0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, 0.0003, -0.0003, -0.0003}, //     X-axis
+                                   {0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0003, -0.0003, 0.0003, -0.0003}, //     Y-axis
+                                   {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0003, -0.0003, 0.0000, 0.0000, 0.0000, 0.0000}};  //     Z-axis
 
 static three_by_eleven deltaVB;
 
 memcpy(deltaVB.data, tmp_deltaVB, sizeof(float[3][11]));
 
 // value for i=2 in Matlab sim
-/*
+
 static float tmp_C_ItoB[3][3] = {{-0.6733, 0.7070, 0.2164},
                             {-0.7208, -0.6929, 0.0209},
                             {0.1648, -0.1419, 0.9761}};
+
+/*
+static float tmp_C_ItoB[3][3] = {{1.0000, -0.0058, -0.0069},
+                            {0.0059, 1.0000, 0.0076},
+                            {0.0068, -0.0076, 0.9999}};
 */
-static float tmp_C_ItoB[3][3] = {{0.9997, -0.0229, 0.0025},
-                            {0.0229, 0.9997, 0.0068},
-                            {-0.0027, -0.0067, 1.0000}};
 
 /*
 static float tmp_C_ItoB[3][3] = {{0.0000, 1.000, 0.0000},
@@ -431,28 +434,116 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
   deltaVB[2] = deltaVB_row2;
 */
   
-
-  static int x;
-  //parameters *p_params = &params;
-  x = selectThruster(&deltaVB, &C_ItoB);
- // x = selectThruster();
-  
-
+  static int thrusterOption;
   static char* prpCMD; //static char to receive "message" from external_cmds
 
   while(1) {
     OS_Delay(250);
-    char tmp[20];
-    sprintf(tmp, "This is x: %d\r\n", x);
-    csk_uart0_puts(tmp);
 
+    // Looks for non-zero values in POSE_DESIRED to begin movement towards secondary spacecraft
+    if (POSE_DESIRED.xi != 0 || POSE_DESIRED.yi != 0 || POSE_DESIRED.zi != 0) {
+      thrusterOption = selectThruster(&deltaVB, &C_ItoB);
+      char tmp[20];
+      sprintf(tmp, "This is x: %d\r\n", thrusterOption);
+      csk_uart0_puts(tmp);
+      if (thrusterOption >= 1 && thrusterOption <=10) {
+        csk_uart0_puts("Thrusters ON!\r\n");
+        csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
+        csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
+        
+        OS_Delay(220);  //delay of about 2s to pressurize veins - per Bryant
+        
+        switch(thrusterOption) {
+          case 1:
+            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
+            break;
+          case 2:
+            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
+            break;
+          case 3:
+            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+            break;
+          case 4:
+            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+            break;
+          case 5:
+            csk_io21_high(); csk_uart0_puts("D ON! (+Z-Body axis)\r\n");
+            break;
+          case 6:
+            csk_io23_high(); csk_uart0_puts("A ON! (-Z-Body axis)\r\n");
+            break;
+          case 7:
+            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
+            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+            break;
+          case 8:
+            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
+            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+            break;
+          case 9:
+            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
+            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+            break;
+          case 10:
+            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
+            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+            break;
+        }
+        
+        OS_Delay(10); // fire thrusters for 100ms
 
+         // turn off main solenoids
+         csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
+         OS_Delay(100);
+         csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");
 
-    //char tmp[150];
-    //vDesire = yHoldPotential(rSense_I, v, params);
-    
-    //sprintf(tmp, "vDesire x: %f, y: %f, z: %f\r\n", vDesire);
-    //csk_uart0_puts(tmp);
+         // turn off thrusters
+         switch(thrusterOption) {
+          case 1:
+            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
+            break;
+          case 2:
+            csk_io17_low(); csk_uart0_puts("C OFf! (-X-Body axis)\r\n");
+            break;
+          case 3:
+            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+            break;
+          case 4:
+            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+            break;
+          case 5:
+            csk_io21_low(); csk_uart0_puts("D OFF! (+Z-Body axis)\r\n");
+            break;
+          case 6:
+            csk_io23_low(); csk_uart0_puts("A OFF! (-Z-Body axis)\r\n");
+            break;
+          case 7:
+            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
+            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+            break;
+          case 8:
+            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
+            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+            break;
+          case 9:
+            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
+            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+            break;
+          case 10:
+            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
+            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+            break;
+        }
+
+        /*
+        if (thrusterOption == 1) { csk_io16_high(); csk_uart0_puts("F ON!\r\n"); }
+        else if (thrusterOption == 2) { csk_io17_high(); csk_uart0_puts("C ON!\r\n"); }
+        else if (thrusterOption == 3) { csk_io18_high(); csk_uart0_puts("B ON!\r\n"); }
+        else if
+        */
+      }
+    }
+
 
     if(OSReadMsg(MSG_PRPTONAV_P)) {
       prpCMD=((char*)(OSTryMsg(MSG_PRPTONAV_P)));
@@ -508,7 +599,7 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
         if (prpCMD[4] == '1') {csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");}
         if (prpCMD[6] == '1') {csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");}
         
-        OS_Delay(220);  //delay of about 2s to pressurize veins - per Bryant
+        OS_Delay(200);  //delay of about 2s to pressurize veins - per Bryant
 
         if (prpCMD[3] == '1') {csk_io23_high(); csk_uart0_puts("A ON!\r\n");}
         if (prpCMD[8] == '1') {csk_io18_high(); csk_uart0_puts("B ON!\r\n");}
