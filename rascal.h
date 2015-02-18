@@ -50,9 +50,9 @@ typedef struct {
 typedef struct {
   float w; // angular vel of orbit
   float verror; // allowed vel error
-  float xdes; // desired final pos coordinates
-  float ydes;
-  float zdes;
+  float xdes; // NOT used as POSE_DESIRED is used: desired final pos coordinates
+  float ydes; // NOT used as POSE_DESIRED is used
+  float zdes; // NOT used as POSE_DESIRED is used
   float xCruise; // x location where the orbit transfer occurs
 } parameters;
 
@@ -69,7 +69,7 @@ extern thrusterinfo THRUSTER_INFO;
 
 //extern pose POSE_IMG
 
-extern float C_ItoB[3][3];
+//extern float C_ItoB[3][3];
 
 
 #endif /*__rascal_h */

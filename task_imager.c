@@ -17,6 +17,7 @@ pose POSE_IMG;
 
 void task_imager(void) {
   
+  //csk_io40_high();
   // inits POSE_IMG
   POSE_IMG.q1 = 0.0;
   POSE_IMG.q2 = 0.0;

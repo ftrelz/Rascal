@@ -50,7 +50,10 @@ initialization, and the Salvo scheduler.
 int main() {
 
   csk_io42_low();
-  csk_io40_low();
+  
+  // Power for FPGA/Imager board! Make sure this gets turned on NOW!
+  csk_io40_high();  
+
   // Do target-specific (e.g., clocks, UARTs) and general 
   //  (e.g., CSK IO) initialization.
   init();
