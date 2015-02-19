@@ -26,8 +26,8 @@ $Date: 2010-02-13 13:40:21-08 $
 #define GETCHAR_PUTCHAR_RETURN_ZERO       1           // For this project, these functions return 0
                                                       //  on error
 
-#define RX1_BUFF_SIZE                     100          // 
-#define TX1_BUFF_SIZE                     150        // 
+#define RX1_BUFF_SIZE                     260          // 
+#define TX1_BUFF_SIZE                     260        // 
 #define RX2_BUFF_SIZE                     16          // 
 #define TX2_BUFF_SIZE                     16         // 
 #define RX3_BUFF_SIZE                     550          // 

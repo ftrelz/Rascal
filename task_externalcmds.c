@@ -33,6 +33,11 @@ $Date: 2009-11-02 00:45:07-08 $
 // defines POSE_BOEING from rascal.h
 pose POSE_BOEING;
 
+// defines Boeing serial frame constants, taken from PDG
+#define FRAME_SIZE 258  //	indicates total frame size (in bytes)
+#define DATA_SIZE 256	//	indicates size of data message (in bytes)
+#define FLAG 0x7e		//	indicates flag for frame start or end
+
 // Other tasks
 
 extern char * i2c_SnR(int address, char sending[], int numSend, int numRec, char charArrayOfAppropriateSize[], int asciiOrHex);
@@ -123,6 +128,54 @@ void BroadcastOrSaveN(char a[], char * fName, int num){
 //static int ZEROCLOCKINT=0;
 //static int IRONMANINT=0;
 
+// function to take recieved serial frame and check for start and end frame
+// also handles escape chars in message data
+char* recv_frame(char *msg, int frame_size){
+  int check = 0;
+
+  //de-stuffed message
+  char dmsg[DATA_SIZE];
+		
+  // byte stuffed character signature
+  char ESC_FLAG[]={0x7d, 0x5e};
+  char ESC_ESC[]={0x7d, 0x5d};
+
+  // discards frame if not correct size or header/end aren't in the right places
+  if ((frame_size != FRAME_SIZE) || (msg[0] != FLAG) || (msg[FRAME_SIZE-1] != FLAG)){
+    //   printf("Discarded message\n");
+        //   printf("%x\n", msg[0]);
+        //   printf("%x\n", msg[FRAME_SIZE-1]);
+    msg[0] = '\0';
+    return (NULL);
+  } else {
+    // looks for byte stuffed characters in msg
+    int j = 0;	//	int counter for 'for' loop below -->
+    for (j = 0; j < FRAME_SIZE; j++){
+      // byte stuffed character check for ESC_FLAG
+	  if ((msg[j] == ESC_FLAG[0]) && (msg[j+1] == ESC_FLAG[1])){
+	    // writes escaped character to de-stuffed message
+	    dmsg[j] = 0x7e;
+              // printf("De-stuffed ESC_FLAG\n");
+	  }
+	  // byte stuffed character check for ESC_ESC
+	  else if ((msg[j] == ESC_ESC[0]) && (msg[j+1] == ESC_ESC[1])){
+	    // writes escaped character to de-stuffed message
+        dmsg[j] = 0x7d;
+        // printf("De-stuffed ESC_ESC\n");
+	  }
+	  // drops start flag from de-stuffed message
+	  else if (msg[j] == FLAG) continue;
+	  // else copies char to de-stuffed message
+      else{
+	    dmsg[j] = msg[j];
+	  }
+    }
+  
+  return (dmsg);
+}
+
+}// end recv_frame
+
 // This function takes and processes command sequences and passes them off accordingly
 void CMDS(char a[], char * saveName) {
 //	OSSignalBinSem(BINSEM_RAISEPOWERLEVEL_P); 
@@ -168,7 +221,8 @@ void CMDS(char a[], char * saveName) {
 } // End - CMDS
 
 void task_externalcmds(void) {
-    char a[256]; // holds received command
+    static char a[258]; // holds received command
+    static char* dmsg;
     
     //task_nav msg test
   	//static char a[256]="PRP11111111500";
@@ -207,54 +261,65 @@ void task_externalcmds(void) {
 			waitTmp=1;
 			//strcpy(a,"");
 			i=0;
-			while(csk_uart0_count() && i<256) {
+			while(csk_uart0_count() && i<259) {
 				//sprintf(a,"%s%c",a,csk_uart0_getchar());
 				a[i]=csk_uart0_getchar();
 				waitTmp=0;
 				i++;
 			}
-			a[i]=0;
+            if (a[0] == 0x7e && a[257] == 0x7e) {
+              dmsg = recv_frame(a, FRAME_SIZE);
+			}
+            a[i]=0;
 		}  //END: Will wait until something is received, and store it in a.
-		
-        // Begins full propulsion tank purge - for shipment and ground testing!
-        if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='N') { // if a is PURGEON
-          // turns ON S1 and S2 solenoids AND ALL thrusters
-          csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
-          csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
-          csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
-          OS_Delay(10);
-          csk_io23_high(); csk_uart0_puts("A ON!\r\n");
-          //csk_io18_high(); csk_uart0_puts("B ON!\r\n");
-          csk_io17_high(); csk_uart0_puts("C ON!\r\n");
-          // csk_io21_high(); csk_uart0_puts("D ON!\r\n");
-          csk_io19_high(); csk_uart0_puts("E ON!\r\n");
-          //csk_io16_high(); csk_uart0_puts("F ON!\r\n");
-          
-        } // End 'PURGEON'
+        
 
-        // Ends full propulsion tank purge - for shipment and ground testing!
-        else if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='F' && a[7]=='F') { // if a is PURGEOFF
-        
-        // turns OFF solenoids and thrusters
-        csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
-        csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");
-        OS_Delay(200);
-        csk_io23_low(); csk_uart0_puts("A OFF!\r\n");
-        //csk_io18_low(); csk_uart0_puts("B OFF!\r\n");
-        csk_io17_low(); csk_uart0_puts("C OFF!\r\n");
-        //csk_io21_low(); csk_uart0_puts("D OFF!\r\n");
-        csk_io19_low(); csk_uart0_puts("E OFF!\r\n");
-        //csk_io16_low(); csk_uart0_puts("F OFF!\r\n");
-        csk_uart0_puts("END - Full Propulsion Tank Purge!\r\n");
-        
-          
-      } // End 'PURGEOFF'
-      
-      else {
-        CMDS(a, 0);
-      }
-        
-	}
+        csk_uart0_puts(&dmsg);
+        if(dmsg != NULL) {
+            //char str[300];
+            //for(i = 0; i < 300; i++){
+              //sprintf(str, "%c", a[i]);
+            //}
+            //csk_uart0_puts(str);
+	        // Begins full propulsion tank purge - for shipment and ground testing!
+	        if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='N') { // if a is PURGEON
+	          // turns ON S1 and S2 solenoids AND ALL thrusters
+	          csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
+	          csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
+	          csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
+	          OS_Delay(10);
+	          csk_io23_high(); csk_uart0_puts("A ON!\r\n");
+	          //csk_io18_high(); csk_uart0_puts("B ON!\r\n");
+	          csk_io17_high(); csk_uart0_puts("C ON!\r\n");
+	          //csk_io21_high(); csk_uart0_puts("D ON!\r\n");
+	          csk_io19_high(); csk_uart0_puts("E ON!\r\n");
+	          //csk_io16_high(); csk_uart0_puts("F ON!\r\n");
+	          
+	        } // End 'PURGEON'
+	
+	        // Ends full propulsion tank purge - for shipment and ground testing!
+	        else if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='F' && a[7]=='F') { // if a is PURGEOFF
+	        
+	        // turns OFF solenoids and thrusters
+	        csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
+	        csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");
+	        OS_Delay(200);
+	        csk_io23_low(); csk_uart0_puts("A OFF!\r\n");
+	        //csk_io18_low(); csk_uart0_puts("B OFF!\r\n");
+	        csk_io17_low(); csk_uart0_puts("C OFF!\r\n");
+	        //csk_io21_low(); csk_uart0_puts("D OFF!\r\n");
+	        csk_io19_low(); csk_uart0_puts("E OFF!\r\n");
+	        //csk_io16_low(); csk_uart0_puts("F OFF!\r\n");
+	        csk_uart0_puts("END - Full Propulsion Tank Purge!\r\n");
+	        
+	          
+	        } // End 'PURGEOFF'
+	      
+	        else if (a[0]=='P' && a[1]=='R' && a[2]=='P') {
+	          CMDS(a, 0);
+	        }
+        }
+	 }
 } /* task_externalcmds() */
 
 

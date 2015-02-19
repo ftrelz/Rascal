@@ -58,6 +58,7 @@ extern csk_status_t csk_status;
 //extern char strTmp[];
 //static int I2CSPEED; 			//This is set in task_i2c.
 #define MSG_PRPTONAV_P            OSECBP(1)
+#define MSG_QUATERNIONTONAV_P     OSECBP(1)
 //#define BINSEM_COP_ARG_P   	  	  OSECBP(5)
 //#define MSG_GETLINES_P   		  OSECBP(10)
 //#define MSG_HETOSDCARD_P   		  OSECBP(11)
