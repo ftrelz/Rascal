@@ -40,15 +40,13 @@ thrusterinfo THRUSTER_INFO;
 float C_ItoB[3][3];
 static float BThrust[3][11];
 //static float deltaVB[3][11];
-static float I_BB[3][3];
-static float omega_BI[3];
-static float H_B[3];
-static float dqdt[4];
+typedef struct _three_by_eleven {
+	float data[3][11];
+} three_by_eleven;
 
-
-// find another way
-// holds q values of POSE_EST for purposes of matrix multiplication
-// static float POSE_EST_q_values[4] = {POSE_EST.q1, POSE_EST.q2, POSE_EST.q3, POSE_EST.q4};
+typedef struct _three_by_three {
+  float data[3][3];
+} three_by_three;
 
 // used in yHoldPotential
 int sign(float x) {
@@ -57,35 +55,46 @@ int sign(float x) {
   else return -1;
 }
 
-void dc2q()
+void q2dc(three_by_three *C_ItoB)
 {
-
-}
-
-void q2dc(float p_C_ItoB[][3])
-{
+    int i, j;
+  // used to multiply array values by struct values
+  float poseValues[3][3];
+  poseValues[0][0] = POSE_BOEING.q1 * POSE_BOEING.q1;
+  poseValues[0][1] = POSE_BOEING.q2 * POSE_BOEING.q1;
+  poseValues[0][2] = POSE_BOEING.q3 * POSE_BOEING.q1;
+  poseValues[1][0] = POSE_BOEING.q1 * POSE_BOEING.q2;
+  poseValues[1][1] = POSE_BOEING.q2 * POSE_BOEING.q2;
+  poseValues[1][2] = POSE_BOEING.q3 * POSE_BOEING.q2;
+  poseValues[2][0] = POSE_BOEING.q3 * POSE_BOEING.q1;
+  poseValues[2][1] = POSE_BOEING.q3 * POSE_BOEING.q2;
+  poseValues[2][2] = POSE_BOEING.q3 * POSE_BOEING.q3;
   // find in q2dc line 13, identity matrix
   const float eye[3][3] = {{1.000, 0.000, 0.000},
                            {0.000, 1.000, 0.000},
                            {0.000, 0.000, 1.000}};
   // find in q2dc line 12
-  const float Q[3][3] = {{0, -POSE_EST.q3, POSE_EST.q2},
-                   {POSE_EST.q3, 0, -POSE_EST.q1},
-                   {-POSE_EST.q2, POSE_EST.q1, 0}};
+  const float Q[3][3] = {{0, -POSE_BOEING.q3, POSE_BOEING.q2},
+                         {POSE_BOEING.q3, 0, -POSE_BOEING.q1},
+                         {-POSE_BOEING.q2, POSE_BOEING.q1, 0}};
   float ans[3][3];
-  float twoqq = 2 * ((POSE_EST.q1 * POSE_EST.q1) + (POSE_EST.q2 * POSE_EST.q2) + (POSE_EST.q3 * POSE_EST.q3));
-  int i, j;
+  // first term of calculation on line 13 of q2dc, term before +
+  float firstTerm[3][3];
+  // middle term of calculation on line 13 of q2dc, term between + and -
+  float middleTerm[3][3];
   for(i = 0; i < 3; i++)
   {
     for(j = 0; j < 3; j++)
     {
-      ans[i][j] = (2 * (POSE_EST.q4 * POSE_EST.q4) - 1) * eye[i][j];
-      ans[i][j] = ans[i][j] + twoqq - ((2*POSE_EST.q4)*Q[i][j]);
-      p_C_ItoB[i][j] = ans[i][j];
+      firstTerm[i][j] = (2.0 * (POSE_BOEING.q4 * POSE_BOEING.q4) - 1) * eye[i][j];
+      middleTerm[i][j] = 2.0 * poseValues[i][j]; 
+      ans[i][j] = firstTerm[i][j] + middleTerm[i][j] - ((2*POSE_BOEING.q4)*Q[i][j]);
+      C_ItoB->data[i][j] = ans[i][j];
     }
   }
 }
 
+/*
 // Calculates inital values for dqdt
 // dqdt = qdot(q(:,i), omega_BI(:,i));
 // q = POSE_EST_q_values
@@ -109,6 +118,7 @@ void output_dqdt(float p_dqdt[], float p_omega_BI[], float POSE_EST_q_values[])
       sum = 0; 
     }
 }
+
 
 // "Returns" updated q
 // need to figure out expm() from matlab code
@@ -145,24 +155,7 @@ void output_q(float POSE_EST_q_values[], float p_omega_BI[])
   POSE_EST.q3 = temp_q_values[2];
   POSE_EST.q4 = temp_q_values[3];
 }
-
-// Calculates inital values for H_B
-void I_BBxomega_BI(float p_H_B[], float p_I_BB[][3], float p_omega_BI[])
-{
-  int c, d;
-  float sum;
- 
-    for ( c = 0 ; c < 3 ; c++ ) {
-      for ( d = 0 ; d < 3 ; d++ ){
-        sum = sum + p_I_BB[c][d] * p_omega_BI[d];
-      }  
- 
-      p_H_B[c] = sum;
-      sum = 0; 
-    }
-}
-
-
+*/
 
 // function used in select thruster to calculate vErr_B
 // -C_ItoB * (POSE_DESIRE - POSE_IMG)
@@ -224,17 +217,6 @@ void yHoldPotential(parameters *params) {
     }
   }
 }
-
-
-
-typedef struct _three_by_eleven {
-	float data[3][11];
-} three_by_eleven;
-
-typedef struct _three_by_three {
-  float data[3][3];
-} three_by_three;
-
 
 int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
   int numThrustOptions = 11;
@@ -381,41 +363,28 @@ memcpy(deltaVB.data, tmp_deltaVB, sizeof(float[3][11]));
 
 // value for i=2 in Matlab sim
 
+/*
 static float tmp_C_ItoB[3][3] = {{-0.6733, 0.7070, 0.2164},
                             {-0.7208, -0.6929, 0.0209},
                             {0.1648, -0.1419, 0.9761}};
 
-/*
+
 static float tmp_C_ItoB[3][3] = {{1.0000, -0.0058, -0.0069},
                             {0.0059, 1.0000, 0.0076},
                             {0.0068, -0.0076, 0.9999}};
 */
 
-/*
+
 static float tmp_C_ItoB[3][3] = {{0.0000, 1.000, 0.0000},
                             {-1.0000, 0.0000, 0.0000},
                             {0.0000, 0.0000, 1.0000}};
-*/
+
 
 static three_by_three C_ItoB;
 
 memcpy(C_ItoB.data, tmp_C_ItoB, sizeof(float[3][3]));
-
-static float I_BB[3][3] = {{0.1000, 0.0000, 0.0000},
-                           {0.0000, 0.1000, 0.0000},
-                           {0.0000, 0.0000, 0.1000}};
-
-static float omega_BI[3] = {0.1000, -0.1000, 0.5000};
-
-static float H_B[3];
-
-static float dqdt[4];
-
   
-
-  // all possible thruster combinations
-
-  
+// all possible thruster combinations
 static float tmp_BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
                                {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
                                {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000}};
@@ -433,19 +402,27 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
   deltaVB[1] = deltaVB_row1;
   deltaVB[2] = deltaVB_row2;
 */
-  
+
   static int thrusterOption;
+  static int i, j;
   static char* prpCMD; //static char to receive "message" from external_cmds
 
   while(1) {
     OS_Delay(250);
-
+    
     // Looks for non-zero values in POSE_DESIRED to begin movement towards secondary spacecraft
     if (POSE_DESIRED.xi != 0 || POSE_DESIRED.yi != 0 || POSE_DESIRED.zi != 0) {
       thrusterOption = selectThruster(&deltaVB, &C_ItoB);
+      q2dc(&C_ItoB);
       char tmp[20];
       sprintf(tmp, "This is x: %d\r\n", thrusterOption);
       csk_uart0_puts(tmp);
+      for(i = 0; i < 3; i++) {
+        for(j = 0; j < 3; j++) {
+          sprintf(tmp, "%f ", C_ItoB.data[i][j]);
+          csk_uart0_puts(tmp);
+        }
+      }
       if (thrusterOption >= 1 && thrusterOption <=10) {
         csk_uart0_puts("Thrusters ON!\r\n");
         csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");

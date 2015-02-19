@@ -100,6 +100,7 @@ int main() {
 //  OSgltypeMsgQP MsqQBuff[SIZEOF_HE_MSGQ];
 //  OSCreateMsgQ(MSGQ_HETX_P, MQCBP_HETX_P, MsqQBuff, SIZEOF_HE_MSGQ);
   OSCreateMsg(MSG_PRPTONAV_P, (OStypeMsgP) 0); // PRP externalcmd to NAV (thruster request)    
+  OSCreateMSG(MSG_QUATERNIONTONAV_P, (OStypeMsgP), 0); //Quaternion info from cmds to NAV
 
 	//Init SD-Card
 	csk_sd_pwr_on();

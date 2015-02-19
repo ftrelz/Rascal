@@ -176,10 +176,10 @@ void task_externalcmds(void) {
 	static unsigned int i=0;
 
   // defines and inits POSE_BOEING
-  POSE_BOEING.q1 = 0.0;
-  POSE_BOEING.q2 = 0.0;
-  POSE_BOEING.q3 = 0.0;
-  POSE_BOEING.q4 = 0.0;
+  POSE_BOEING.q1 = 0.0045;
+  POSE_BOEING.q2 = -0.0022;
+  POSE_BOEING.q3 = 0.0029;
+  POSE_BOEING.q4 = 1.000;
   POSE_BOEING.q1dot = 0.0;
   POSE_BOEING.q2dot = 0.0;
   POSE_BOEING.q3dot = 0.0;
