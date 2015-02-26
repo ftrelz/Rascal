@@ -23,6 +23,9 @@ $Date: 2009-11-02 00:45:07-08 $
 #define CSK_EFFS_THIN_LIB 1
 #include "csk_sd.h"
 #include "thin_usr.h"
+#define MAIN_OUTGOING_FLAG "RASCALSLUGND"
+#define BEACON_BEGIN_FLAG "SLUBCN03xxyyzz"
+#define BEACON_END_FLAG "BEAEND"
 
 // Pumpkin Salvo headers
 #include "salvo.h"
@@ -33,10 +36,15 @@ $Date: 2009-11-02 00:45:07-08 $
 // defines POSE_BOEING from rascal.h
 pose POSE_BOEING;
 
-// defines Boeing serial frame constants, taken from PDG
-#define FRAME_SIZE 258  //	indicates total frame size (in bytes)
-#define DATA_SIZE 256	//	indicates size of data message (in bytes)
-#define FLAG 0x7e		//	indicates flag for frame start or end
+// defines outgoing serial frame
+static char outgoing[258];
+
+// defines and inits beacon flags
+//static const char main_start_end[] = "RASCALSLUGND";
+//static const char beacon_begin[] = "SLUBCN03xxyyzz";
+//static const char beacon_end[] = "BEAEND";
+
+
 
 // Other tasks
 
@@ -104,6 +112,12 @@ unsigned int makeHex(char char1, char char2) {
 	return total;
 }
 
+// init THRUST_ENABLE_FLAG to be DISABLED
+THRUST_ENABLE_FLAG = DISABLED;
+
+// init STATUS-FLAG to be IDLE
+STATUS_FLAG = IDLE;
+
 void BroadcastOrSave(char a[], char * fName){
 	if (!fName) {
 //		HeTrans255Str(a);
@@ -130,15 +144,15 @@ void BroadcastOrSaveN(char a[], char * fName, int num){
 
 // function to take recieved serial frame and check for start and end frame
 // also handles escape chars in message data
-char* recv_frame(char *msg, int frame_size){
-  int check = 0;
-
+char* recv_frame(char msg[], int frame_size){
+  
   //de-stuffed message
   char dmsg[DATA_SIZE];
 		
   // byte stuffed character signature
   char ESC_FLAG[]={0x7d, 0x5e};
   char ESC_ESC[]={0x7d, 0x5d};
+  int counter = 0;
 
   // discards frame if not correct size or header/end aren't in the right places
   if ((frame_size != FRAME_SIZE) || (msg[0] != FLAG) || (msg[FRAME_SIZE-1] != FLAG)){
@@ -146,6 +160,7 @@ char* recv_frame(char *msg, int frame_size){
         //   printf("%x\n", msg[0]);
         //   printf("%x\n", msg[FRAME_SIZE-1]);
     msg[0] = '\0';
+    //dmsg = NULL;
     return (NULL);
   } else {
     // looks for byte stuffed characters in msg
@@ -164,25 +179,31 @@ char* recv_frame(char *msg, int frame_size){
         // printf("De-stuffed ESC_ESC\n");
 	  }
 	  // drops start flag from de-stuffed message
-	  else if (msg[j] == FLAG) continue;
+	  else if (msg[j] == FLAG){
+        counter++;
+        continue;
+      }      
 	  // else copies char to de-stuffed message
       else{
-	    dmsg[j] = msg[j];
+	    dmsg[j-counter] = msg[j];
 	  }
     }
   
-  return (dmsg);
+  return dmsg;
 }
 
 }// end recv_frame
 
 // This function takes and processes command sequences and passes them off accordingly
-void CMDS(char a[], char * saveName) {
+void CMDS(const char *a, char * saveName) {
 //	OSSignalBinSem(BINSEM_RAISEPOWERLEVEL_P); 
 	
-    csk_uart0_puts("task_externalcmds:\t");
-	char tmp[400]; 
+    //csk_uart0_puts("task_externalcmds:\t");
+//	char tmp[400]; 
 	
+    //static char tmps[256];
+    //strcpy(tmps, *a);
+
     /* Why is this Nop here??? */
     //int I;
 	//for(I=0;I<1000;I++) Nop();
@@ -190,44 +211,80 @@ void CMDS(char a[], char * saveName) {
 	if (a[0]=='\r' || a[0]=='\n' || a[0]==0) { return; }
     
     // Start command handling
-
-    // Thruster request!
-    if (a[0]=='P' && a[1]=='R' && a[2]=='P') { //if a (beings with PRP!!!)
-      int BEGIN = 3; // beginning index position of thruster command
-      int END = 10;  // ending index position of thruster command
+    // TODO: handle both slu headers SLUGRNRASCAL and SLUBCN03xxyyzz
+    if (a[0]=='S' && a[1]=='L' && a[2]=='U' && a[6]=='R' && a[7]=='A' && a[8]=='S') { // if "SLUGNDRASCAL" header is found process ground commands from list (see Max)
+      // Thruster request!
+      if (a[12]=='P' && a[13]=='R' && a[14]=='P') { //if a (beings with PRP!!!)
+        int BEGIN = 15; // beginning index position of thruster command
+        int END = 22;  // ending index position of thruster command
       
-      for (BEGIN;BEGIN<=END;BEGIN++){ // sanity check to ensure all binary bits
-        if ((a[BEGIN] != '0') && (a[BEGIN] != '1')){
-          csk_uart0_puts("Invalid PRP command!\r\n");
-          return;
+        for (BEGIN;BEGIN<=END;BEGIN++){ // sanity check to ensure all binary bits
+          if ((a[BEGIN] != '0') && (a[BEGIN] != '1')){
+            csk_uart0_puts("Invalid PRP command!\r\n");
+            return;
+          }
         }
+        static char cmd[DATA_SIZE];
+        memcpy(cmd, a, DATA_SIZE*sizeof(char));
+        //csk_uart0_puts(cmd);
+	    //csk_uart0_puts("\r\n");
+        OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
+        return;
+      } // End - 'PRP' command
+      else if (a[12]=='S' && a[13]=='T') { // Check for "STATUS" command header
+        csk_uart0_puts("STATUS OUTPUT\n");
+        return;
       }
-      char cmd[strlen(a)+1];
-      strcpy(cmd, a);
-      csk_uart0_puts(cmd);
-	  csk_uart0_puts("\r\n");
-      OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
-      return;
-    } // End - 'PRP' command
-
+      else if (a[12]=='S' && a[13]=='P') { // Check for "SPRT" command header
+        csk_uart0_puts("SPRT OUTPUT\n");
+        return;
+      }
+      else if (a[12]=='G') { // Check for "GO2" command header
+        csk_uart0_puts("GO2 OUTPUT\n");
+        return;
+      }
+      else if (a[12]=='P' && a[13]=='O' && a[16]=='I') { // Check for "POSEIMG" command header
+        csk_uart0_puts("POSEIMG OUTPUT\n");
+        return;
+      }
+      else if (a[12]=='P' && a[13]=='O' && a[16]=='E') { // Check for "POSEEST" command header
+        csk_uart0_puts("POSEEST OUTPUT\n");
+        return;
+      }
+      else if (a[12]=='T' && a[18]=='I') { // Check for "THRUSTINFO" command header
+        csk_uart0_puts("THRUSTINFO OUTPUT\n");
+        return;
+      }
+      else if (a[12]=='T' && a[18]=='_' && a[19]=='E') { // Check for "THRUST_ENABLE" command header
+        csk_uart0_puts("THRUSTERS ENABLED\n");
+        THRUST_ENABLE_FLAG = ENABLED;
+        return;
+      }
+      else if (a[12]=='T' && a[18]=='_' && a[19]=='D') { // Check for "THRUST_DISABLE" command header
+        csk_uart0_puts("THRUSTERS DISABLED\n");
+        THRUST_ENABLE_FLAG = DISABLED;
+        return;
+      }
+    }
     
 
 	//At this point, no command has been recognized, as it would have returned if it had been.
-	char tmps[80];
-	sprintf(tmps, "%s{%s}", COMMAND_NO_JOY, a);
-	csk_uart0_puts(tmps);
-	BroadcastOrSave(tmps, saveName);
+	//char tmps[80];
+	sprintf(a, "%s{%s}", COMMAND_NO_JOY, a);
+	csk_uart0_puts(a);
+	BroadcastOrSave(a, saveName);
     return;
 } // End - CMDS
 
 void task_externalcmds(void) {
-    static char a[258]; // holds received command
-    static char* dmsg;
+  static unsigned int i=0;
+  sprintf(outgoing, "%c%s%s", FLAG, MAIN_OUTGOING_FLAG, BEACON_BEGIN_FLAG); 
+  sprintf((outgoing + (239*sizeof(char))), "%s%s%c", BEACON_END_FLAG, MAIN_OUTGOING_FLAG, FLAG);
+  static char a[258]; // holds received command
+  static char* dmsg;
     
-    //task_nav msg test
-  	//static char a[256]="PRP11111111500";
-
-	static unsigned int i=0;
+  //task_nav msg test
+ //static char a[256]="PRP11111111500";
 
   // defines and inits POSE_BOEING
   POSE_BOEING.q1 = 0.0045;
@@ -259,22 +316,31 @@ void task_externalcmds(void) {
 		while(waitTmp) {
 			OS_Delay(20);
 			waitTmp=1;
+            dmsg = NULL;
 			//strcpy(a,"");
 			i=0;
-			while(csk_uart0_count() && i<259) {
+			while(csk_uart0_count() && i<258) {
 				//sprintf(a,"%s%c",a,csk_uart0_getchar());
 				a[i]=csk_uart0_getchar();
 				waitTmp=0;
 				i++;
 			}
             if (a[0] == 0x7e && a[257] == 0x7e) {
+              //csk_uart0_puts("I'm in sanity check!");
+              //dmsg = recv_frame(a, FRAME_SIZE);
               dmsg = recv_frame(a, FRAME_SIZE);
 			}
-            a[i]=0;
+            a[0]=0;
 		}  //END: Will wait until something is received, and store it in a.
+        Nop();
         
-
-        csk_uart0_puts(&dmsg);
+        char tmp[256] = {0xff};
+        
+/*
+        sprintf(tmp, &dmsg);
+        csk_uart0_puts("This is &dmsg: \r\n");
+        csk_uart0_puts(tmp);
+*/  
         if(dmsg != NULL) {
             //char str[300];
             //for(i = 0; i < 300; i++){
@@ -282,7 +348,7 @@ void task_externalcmds(void) {
             //}
             //csk_uart0_puts(str);
 	        // Begins full propulsion tank purge - for shipment and ground testing!
-	        if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='N') { // if a is PURGEON
+	        if (dmsg[0]=='P' && dmsg[1]=='U' && dmsg[2]=='R' && dmsg[3]=='G' && dmsg[4]=='E' && dmsg[5]=='O' && dmsg[6]=='N') { // if dmsg is PURGEON
 	          // turns ON S1 and S2 solenoids AND ALL thrusters
 	          csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
 	          csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
@@ -298,7 +364,7 @@ void task_externalcmds(void) {
 	        } // End 'PURGEON'
 	
 	        // Ends full propulsion tank purge - for shipment and ground testing!
-	        else if (a[0]=='P' && a[1]=='U' && a[2]=='R' && a[3]=='G' && a[4]=='E' && a[5]=='O' && a[6]=='F' && a[7]=='F') { // if a is PURGEOFF
+	        else if (dmsg[0]=='P' && dmsg[1]=='U' && dmsg[2]=='R' && dmsg[3]=='G' && dmsg[4]=='E' && dmsg[5]=='O' && dmsg[6]=='F' && dmsg[7]=='F') { // if dmg is PURGEOFF
 	        
 	        // turns OFF solenoids and thrusters
 	        csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
@@ -315,9 +381,10 @@ void task_externalcmds(void) {
 	          
 	        } // End 'PURGEOFF'
 	      
-	        else if (a[0]=='P' && a[1]=='R' && a[2]=='P') {
-	          CMDS(a, 0);
-	        }
+            char b[256];
+            memcpy(b, dmsg, DATA_SIZE*sizeof(char));
+	        CMDS(&b, 0);
+	        
         }
 	 }
 } /* task_externalcmds() */

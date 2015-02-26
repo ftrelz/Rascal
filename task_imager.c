@@ -34,14 +34,40 @@ void task_imager(void) {
   POSE_IMG.yidot = 0.0176;
   POSE_IMG.zidot = -0.0018;
   
+  static char a[200];
+  static unsigned int i=0;
+
+ 
   while(1) {
     OS_Delay(250);
+ /*   
+     char* test='AB';
+    csk_uart0_puts(test);
+    csk_uart0_puts("\r\n");
+    csk_uart2_puts(test);
+*/
+    //char tmp[50];
+    //sprintf(tmp, "I'm in task_imager!\r\n");
+   // csk_uart0_puts(tmp);
     
-
-    char tmp[50];
-    sprintf(tmp, "I'm in task_imager!\r\n");
-    csk_uart0_puts(tmp);
-
-
+    
+//    csk_uart0_puts(csk_uart2_getchar());
+/*
+    int waitTmp=1; //ENTER: Will wait until something is received, and store it in a.
+		while(waitTmp) {
+			OS_Delay(20);
+             waitTmp=1;
+			//strcpy(a,"");
+			i=0;
+			while(csk_uart2_count() && i<258) {
+                csk_uart0_puts("I'm in uart2_count!");
+				//sprintf(a,"%s%c",a,csk_uart0_getchar());
+				a[i]=csk_uart2_getchar();
+				waitTmp=0;
+				i++;
+			}
+  } 
+  csk_uart0_puts(a);
+ */
   } // end while(1)
 } // end task_imager(void)

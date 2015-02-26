@@ -120,8 +120,8 @@ void init(void) {
   // Init UARTs to 9600,N,8,1  or 38400,N,8,1 or 58800,N,8,1
   // UARTs won't transmit until interrupts are enabled ...
 //  csk_uart2_open(UART_9600_N81_MAIN);
-  csk_uart0_open(UART_58800_N81_MAIN);  // RS-232 to debug/Boeing C2 Bus
-  csk_uart1_open(CSK_UART_9600_N81);    // 
+  csk_uart0_open(UART_115200_N81_MAIN);  // RS-232 to debug/Boeing C2 Bus
+  //csk_uart1_open(CSK_UART_9600_N81);    // 
   csk_uart2_open(CSK_UART_9600_N81);    // Rascal FPGA Imager
 //  csk_uart1_open(UART_38400_N81_MAIN);
   csk_uart0_puts(STR_CRLF STR_CRLF);

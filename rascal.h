@@ -2,6 +2,18 @@
 #define __main_h
 #define PI 3.14159265359
 
+// defines Boeing serial frame constants, taken from PDG
+#define FRAME_SIZE 258  //	indicates total frame size (in bytes)
+#define DATA_SIZE 256	//	indicates size of data message (in bytes)
+#define FLAG 0x7e		//	indicates flag for frame start or end
+#define OUT_START_FLAG_SIZE 26
+#define OUT_END_FLAG_SIZE 18
+#define DISABLED 0      //  used in conjunction with THRUST_ENABLE_FLAG
+#define ENABLED 1       //  used in conjunction with THRUST_ENABLE_FLAG
+#define IDLE 0          //  used in conjuction with STATUS_FLAG
+#define NAV 1           //  "    "  "          "    "
+#define ERROR 2         //  "    "  "          "    "
+
 // struct for all POSE tasks:
 // POSE_BOEING, POSE_DESIRED, POSE_EST, POSE_IMG
 typedef struct {
@@ -67,9 +79,16 @@ extern pose POSE_ACTUAL;
 extern pose POSE_IMG;
 extern thrusterinfo THRUSTER_INFO;
 
-//extern pose POSE_IMG
+// defines THRUST_ENABLE_FLAG
+// DISABLED = 0
+// ENABLED = 1;
+extern int THRUST_ENABLE_FLAG;
 
-//extern float C_ItoB[3][3];
+// defines STATUS_FLAG
+// IDLE = 0
+// NAV = 1
+// ERROR = 2
+extern int STATUS_FLAG;
 
 
 #endif /*__rascal_h */
