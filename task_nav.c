@@ -158,7 +158,7 @@ void output_q(float POSE_EST_q_values[], float p_omega_BI[])
 */
 
 // function used in select thruster to calculate vErr_B
-// -C_ItoB * (POSE_DESIRE - POSE_IMG)
+// -C_ItoB * (POSE_DESIRE - POSE_EST)
 void matrix_mul_C_ItoBxPOSE(float matrix1[][3], float multiply[])
 {
   int c, d;
@@ -168,9 +168,9 @@ void matrix_mul_C_ItoBxPOSE(float matrix1[][3], float multiply[])
   float sum;
   sum = 0;
 
-  POSE_values[0] = POSE_DESIRED.xidot - POSE_IMG.xidot;
-  POSE_values[1] = POSE_DESIRED.yidot - POSE_IMG.yidot;
-  POSE_values[2] = POSE_DESIRED.zidot - POSE_IMG.zidot;
+  POSE_values[0] = POSE_DESIRED.xidot - POSE_EST.xidot;
+  POSE_values[1] = POSE_DESIRED.yidot - POSE_EST.yidot;
+  POSE_values[2] = POSE_DESIRED.zidot - POSE_EST.zidot;
 
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
@@ -201,18 +201,18 @@ void matrix_mul_vErr_BxdeltaVB(float matrix1[], float matrix2[][11], float p_sco
 
 
 void yHoldPotential(parameters *params) {
-  float yError = POSE_IMG.yi - POSE_DESIRED.yi;
+  float yError = POSE_EST.yi - POSE_DESIRED.yi;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params->xCruise * O;
 
-  POSE_DESIRED.xidot = -(POSE_IMG.xi - xDesire) / 250;
-  POSE_DESIRED.yidot = -(3/2) * params->w * POSE_IMG.xi;
+  POSE_DESIRED.xidot = -(POSE_EST.xi - xDesire) / 250;
+  POSE_DESIRED.yidot = -(3/2) * params->w * POSE_EST.xi;
 
   if(fabsf(POSE_DESIRED.zi) > 0.001) {
-    if((fabsf(POSE_IMG.zi) / POSE_DESIRED.zi) > 1) {
-      POSE_DESIRED.zidot = -.01 * sign(POSE_IMG.zi);
+    if((fabsf(POSE_EST.zi) / POSE_DESIRED.zi) > 1) {
+      POSE_DESIRED.zidot = -.01 * sign(POSE_EST.zi);
     } else {
-      float t_phiz = sign(POSE_IMG.zidot) * (1/params->w) * acosf(POSE_IMG.zi) / POSE_DESIRED.zi;
+      float t_phiz = sign(POSE_EST.zidot) * (1/params->w) * acosf(POSE_EST.zi) / POSE_DESIRED.zi;
       POSE_DESIRED.zidot = params->w * POSE_DESIRED.zi * sinf(params->w * t_phiz);
     }
   }
@@ -226,18 +226,18 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
   //yHoldPotential(&params);
 
 /* Begin yHoldPotential */
-  float yError = POSE_IMG.yi - POSE_DESIRED.yi;
+  float yError = POSE_EST.yi - POSE_DESIRED.yi;
   float O = (2/PI)*(atanf(yError/5));
   float xDesire = params.xCruise * O;
 
-  POSE_DESIRED.xidot = -(POSE_IMG.xi - xDesire) / 250;
-  POSE_DESIRED.yidot = -(3.0/2.0) * params.w * POSE_IMG.xi;
+  POSE_DESIRED.xidot = -(POSE_EST.xi - xDesire) / 250;
+  POSE_DESIRED.yidot = -(3.0/2.0) * params.w * POSE_EST.xi;
 
   if(fabsf(POSE_DESIRED.zi) > 0.001) {
-    if((fabsf(POSE_IMG.zi) / POSE_DESIRED.zi) > 1) {
-      POSE_DESIRED.zidot = -.01 * sign(POSE_IMG.zi);
+    if((fabsf(POSE_EST.zi) / POSE_DESIRED.zi) > 1) {
+      POSE_DESIRED.zidot = -.01 * sign(POSE_EST.zi);
     } else {
-      float t_phiz = sign(POSE_IMG.zidot) * (1/params.w) * acosf(POSE_IMG.zi) / POSE_DESIRED.zi;
+      float t_phiz = sign(POSE_EST.zidot) * (1/params.w) * acosf(POSE_EST.zi) / POSE_DESIRED.zi;
       POSE_DESIRED.zidot = params.w * POSE_DESIRED.zi * sinf(params.w * t_phiz);
     }
   }
@@ -252,9 +252,9 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
   float sum;
   sum = 0;
 
-  POSE_values[0] = POSE_DESIRED.xidot - POSE_IMG.xidot;
-  POSE_values[1] = POSE_DESIRED.yidot - POSE_IMG.yidot;
-  POSE_values[2] = POSE_DESIRED.zidot - POSE_IMG.zidot;
+  POSE_values[0] = POSE_DESIRED.xidot - POSE_EST.xidot;
+  POSE_values[1] = POSE_DESIRED.yidot - POSE_EST.yidot;
+  POSE_values[2] = POSE_DESIRED.zidot - POSE_EST.zidot;
 
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
@@ -299,6 +299,25 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
   return bestThruster; 
 }
 
+/* Updates THRUSTER_INFO by receiving 12 ints to correspond to which thrusters are fired
+   and for how long (in milliseconds).
+   Called from switch(selectthruster) when thrusters are turned off
+*/
+void updateTHRUSTER_INFO(int one, int two, int three, int four, int five, int six, int seven, int eight, int nine, int ten, int eleven, int twelve) {
+  THRUSTER_INFO.thruster_Azminus = one;
+  THRUSTER_INFO.Azminustime = two;
+  THRUSTER_INFO.thruster_Byplus = three;
+  THRUSTER_INFO.Byplustime = four;
+  THRUSTER_INFO.thruster_Cxminus = five;
+  THRUSTER_INFO.Cxminustime = six;
+  THRUSTER_INFO.thruster_Dzplus = seven;
+  THRUSTER_INFO.Dzplustime = eight;
+  THRUSTER_INFO.thruster_Eyminus = nine;
+  THRUSTER_INFO.Eyminustime = ten;
+  THRUSTER_INFO.thruster_Fxplus = eleven;
+  THRUSTER_INFO.Fxplustime = twelve;
+} // END updateTHRUSTER_INFO
+
 
 void task_nav(void) {
   // might need to change these to POSE_EST values
@@ -337,16 +356,16 @@ void task_nav(void) {
 // defines and inits THRUSTER_INFO
   THRUSTER_INFO.thruster_Azminus = 0;
   THRUSTER_INFO.Azminustime = 0;
-  THRUSTER_INFO.thruster_Bxminus = 0;
-  THRUSTER_INFO.Bxminustime = 0;
-  THRUSTER_INFO.thruster_Cyminus = 0;
-  THRUSTER_INFO.Cyminustime = 0;
+  THRUSTER_INFO.thruster_Byplus = 0;
+  THRUSTER_INFO.Byplustime = 0;
+  THRUSTER_INFO.thruster_Cxminus = 0;
+  THRUSTER_INFO.Cxminustime = 0;
   THRUSTER_INFO.thruster_Dzplus = 0;
   THRUSTER_INFO.Dzplustime = 0;
-  THRUSTER_INFO.thruster_Explus = 0;
-  THRUSTER_INFO.Explustime = 0;
-  THRUSTER_INFO.thruster_Fyplus = 0;
-  THRUSTER_INFO.Fyplustime = 0;
+  THRUSTER_INFO.thruster_Eyminus = 0;
+  THRUSTER_INFO.Eyminustime = 0;
+  THRUSTER_INFO.thruster_Fxplus = 0;
+  THRUSTER_INFO.Fxplustime = 0;
 
 static float BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
                                {0.0000, 0.0000, 0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 1.0000, -1.0000, 1.0000, -1.0000},
@@ -404,6 +423,7 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 */
 
   static int thrusterOption;
+  static int thrustTime = 100; //milliseconds - defined at compile time
   static int i, j;
   static char* prpCMD; //static char to receive "message" from external_cmds
   //static char prpCMD[DATA_SIZE];
@@ -414,6 +434,10 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	    // Looks for non-zero values in POSE_DESIRED to begin movement towards secondary spacecraft
 	    if (POSE_DESIRED.xi != 0 || POSE_DESIRED.yi != 0 || POSE_DESIRED.zi != 0) {
 	      thrusterOption = selectThruster(&deltaVB, &C_ItoB);
+
+          // Update THRUSTER_INFO with thruster option from selectThruster
+          // we are deciding to do this after the thruster has actually been fired
+
 	      q2dc(&C_ItoB);
 	      // char tmp[20];
 	      //sprintf(tmp, "This is x: %d\r\n", thrusterOption);
@@ -426,8 +450,10 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	        }
 	      }
 	*/
+
+          // Maybe add some sort of flag error checking system to verify firing of an individual thruster
 	      if (thrusterOption >= 1 && thrusterOption <=10) {
-	 /*
+	 
 	        csk_uart0_puts("Thrusters ON!\r\n");
 	        csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
 	        csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
@@ -435,6 +461,9 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	        OS_Delay(220);  //delay of about 2s to pressurize veins - per Bryant
 	        
 	        switch(thrusterOption) {
+              case 0:
+                // No thrust option, do nothing
+                break;
 	          case 1:
 	            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
 	            break;
@@ -480,50 +509,58 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	
 	         // turn off thrusters
 	         switch(thrusterOption) {
+              case 0:
+                // Update THRUSTER_INFO - set everything to zeroes since no thruster was selected
+                //THRUSTER_INFO = (struct thrusterinfo){0,0,0,0,0,0,0,0,0,0,0,0};
+                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,0,0);
+                break;
 	          case 1:
 	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-	            break;
+                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,1,thrustTime);
+                break;
 	          case 2:
 	            csk_io17_low(); csk_uart0_puts("C OFf! (-X-Body axis)\r\n");
+                updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,0,0,0,0);
 	            break;
 	          case 3:
 	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,0,0);
+                break;
 	          case 4:
 	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,0,0);
+                break;
 	          case 5:
 	            csk_io21_low(); csk_uart0_puts("D OFF! (+Z-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,1,thrustTime,0,0,0,0);
+                break;
 	          case 6:
 	            csk_io23_low(); csk_uart0_puts("A OFF! (-Z-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(1,thrustTime,0,0,0,0,0,0,0,0,0,0);
+                break;
 	          case 7:
 	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
 	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,1,thrustTime);
+                break;
 	          case 8:
 	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
 	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,1,thrustTime);
+                break;
 	          case 9:
 	            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
 	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,1,thrustTime,0,0,0,0,0,0);
+                break;
 	          case 10:
 	            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
 	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            break;
+	            updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,1,thrustTime,0,0);
+                break;
 	        }
-	         
-	        
-	        if (thrusterOption == 1) { csk_io16_high(); csk_uart0_puts("F ON!\r\n"); }
-	        else if (thrusterOption == 2) { csk_io17_high(); csk_uart0_puts("C ON!\r\n"); }
-	        else if (thrusterOption == 3) { csk_io18_high(); csk_uart0_puts("B ON!\r\n"); }
-	        else if
-	        */
-	      }
-	    }
+	      	      
+	    } // END: if (thrusterOption >= 1 && thrusterOption <=10)
 	
 	
 	      if(OSReadMsg(MSG_PRPTONAV_P)) {
@@ -532,7 +569,7 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	        char tmp[150];
 	        
 	        // Start message verification (for sanity (AND pointer) check)
-	        if (prpCMD[0]=='P' && prpCMD[1]=='R' && prpCMD[2]=='P') { //if a (beings with PRP!!!) -- sanity check
+	        if (prpCMD[12]=='P' && prpCMD[13]=='R' && prpCMD[14]=='P') { //if a (beings with PRP!!!) -- sanity check
 	          // Thruster request!
 	          /* Expects PRP12ABCDEFXXX,
 	             PRP = propulsion command block (gonna send a message to NAV)
@@ -548,7 +585,8 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	                 B   IO.18
 	                 C   IO.17
 	                 F   IO.16
-	          */      
+	          */  
+    
 	          // extracts burn time from prpCMD = last 3 digits of prpCMD
 	          int x, y, z, burn_time_ds;
 	          static int burn_time = 0;
@@ -577,7 +615,8 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	           ** Unsure as to why but will note it for further research.
 	          **/
 	          // turns ON appropriate thruster(s)
-	          csk_uart0_puts("Thrusters ON!\r\n");
+	          
+              csk_uart0_puts("Thrusters ON!\r\n");
 	          if (prpCMD[4] == '1') {csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");}
 	          if (prpCMD[6] == '1') {csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");}
 	          
@@ -589,6 +628,7 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	          if (prpCMD[5] == '1') {csk_io21_high(); csk_uart0_puts("D ON!\r\n");}
 	          if (prpCMD[7] == '1') {csk_io19_high(); csk_uart0_puts("E ON!\r\n");}
 	          if (prpCMD[10]== '1') {csk_io16_high(); csk_uart0_puts("F ON!\r\n");}
+              
 	        
 	          // delay for length of burn_time
 	          // from pg 211 of Salvo RTOS pdf on how to wait longer than maximum timeout
@@ -628,9 +668,9 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 		      sprintf(tmps, "Command failed in task_nav: %s", prpCMD);
 		      csk_uart0_puts(tmps);
 	          }
-	        }
+	        } // END:  if(OSReadMsg(MSG_PRPTONAV_P))
 	
-	    /** COMMENTED OUT TO GET NAV FUNCTIONAL
+	    /* COMMENTED OUT TO GET NAV FUNCTIONAL
 		// Just some constant stuff for the calculations
 			const int m = 3; // kg
 			const int dt = 1; // seconds
@@ -688,7 +728,8 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	 
 		//This involves some 12x3 matricies, so I will attack this at another time.
 		
-	    END COMMENT **/
+	    END COMMENT */
     } 
+    }
    }// END while(1)
-} 
+} // END task_nav

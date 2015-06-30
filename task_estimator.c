@@ -226,7 +226,7 @@ void task_estimator(void) {
   matrix_sub(Ad, LxCd, Ad_LxCd);
   matrix_mul_s_hat_prev(Ad_LxCd, s_hat_prev, Ad_LxCdxs_hat_prev);
   
-  //to be completed: need thrusterchoice, L, and y
+  //to be completed: need THRUSTER_INFO, L, and y
   matrix_add_s_hat(Ad_LxCdxs_hat_prev, Bd_Ixthrusterchoice, Lxy, s_hat);
 
   while(1) {

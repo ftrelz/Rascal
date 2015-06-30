@@ -212,7 +212,7 @@ void CMDS(const char *a, char * saveName) {
     
     // Start command handling
     // TODO: handle both slu headers SLUGRNRASCAL and SLUBCN03xxyyzz
-    if (a[0]=='S' && a[1]=='L' && a[2]=='U' && a[6]=='R' && a[7]=='A' && a[8]=='S') { // if "SLUGNDRASCAL" header is found process ground commands from list (see Max)
+    if (a[0]=='S' && a[1]=='L' && a[2]=='U' && a[6]=='R' && a[7]=='A' && a[8]=='S' && a[DATA_SIZE - 12] == 'S' && a[DATA_SIZE - 11]=='L' && a[DATA_SIZE - 10]=='U' && a[DATA_SIZE - 6]=='R' && a[DATA_SIZE - 5]=='A' && a[DATA_SIZE - 4]=='S') { // if "SLUGNDRASCAL" header is found process ground commands from list (see Max)
       // Thruster request!
       if (a[12]=='P' && a[13]=='R' && a[14]=='P') { //if a (beings with PRP!!!)
         int BEGIN = 15; // beginning index position of thruster command
@@ -231,6 +231,7 @@ void CMDS(const char *a, char * saveName) {
         OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
         return;
       } // End - 'PRP' command
+
       else if (a[12]=='S' && a[13]=='T') { // Check for "STATUS" command header
         csk_uart0_puts("STATUS OUTPUT\n");
         return;
@@ -265,9 +266,34 @@ void CMDS(const char *a, char * saveName) {
         THRUST_ENABLE_FLAG = DISABLED;
         return;
       }
-    }
+      else if (a[12]=='I' && a[13]=='M' && a[14]=='A' && a[15] == 'G' && a[16] == 'E' && a[17] == 'R') { // Check for "IMAGER" command header
+        csk_uart0_puts("IMAGE REQUEST\n");
+        static char cmd[DATA_SIZE];
+        memcpy(cmd, a, DATA_SIZE*sizeof(char));
+        //csk_uart0_puts(cmd);
+	    //csk_uart0_puts("\r\n");
+        OSSignalMsg(MSG_IMAGER_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
+        return;
+       
+      }
+      
+     }
+     else
+     {
+       long int fixedquat[4];
+       char conversionarray[4];
+       int i, j;
+       for (i = 0; i < 4; i++)
+       {
+         for (j = 0; j < 4; j++)
+         {
+           conversionarray[j] = a[12+j];
+         }
+         fixedquat[i] = (long int)conversionarray;
+         Nop();
+       }
+     }
     
-
 	//At this point, no command has been recognized, as it would have returned if it had been.
 	//char tmps[80];
 	sprintf(a, "%s{%s}", COMMAND_NO_JOY, a);
@@ -277,6 +303,7 @@ void CMDS(const char *a, char * saveName) {
 } // End - CMDS
 
 void task_externalcmds(void) {
+
   static unsigned int i=0;
   sprintf(outgoing, "%c%s%s", FLAG, MAIN_OUTGOING_FLAG, BEACON_BEGIN_FLAG); 
   sprintf((outgoing + (239*sizeof(char))), "%s%s%c", BEACON_END_FLAG, MAIN_OUTGOING_FLAG, FLAG);
@@ -310,7 +337,6 @@ void task_externalcmds(void) {
         csk_uart0_puts("\r\nEND POSE_BOEING\r\n");
         csk_uart0_puts(str);
 		END POSE_BOEING TEST **/
-
         OS_Delay(250);
  		int waitTmp=1; //ENTER: Will wait until something is received, and store it in a.
 		while(waitTmp) {
@@ -350,7 +376,7 @@ void task_externalcmds(void) {
 	        // Begins full propulsion tank purge - for shipment and ground testing!
 	        if (dmsg[0]=='P' && dmsg[1]=='U' && dmsg[2]=='R' && dmsg[3]=='G' && dmsg[4]=='E' && dmsg[5]=='O' && dmsg[6]=='N') { // if dmsg is PURGEON
 	          // turns ON S1 and S2 solenoids AND ALL thrusters
-	          csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
+	         /* csk_uart0_puts("BEGIN - Full Propulsion Tank Purge!\r\n");
 	          csk_io22_high(); csk_uart0_puts("S1 ON!\r\n");
 	          csk_io20_high(); csk_uart0_puts("S2 ON!\r\n");
 	          OS_Delay(10);
@@ -359,7 +385,7 @@ void task_externalcmds(void) {
 	          csk_io17_high(); csk_uart0_puts("C ON!\r\n");
 	          //csk_io21_high(); csk_uart0_puts("D ON!\r\n");
 	          csk_io19_high(); csk_uart0_puts("E ON!\r\n");
-	          //csk_io16_high(); csk_uart0_puts("F ON!\r\n");
+	          //csk_io16_high(); csk_uart0_puts("F ON!\r\n");*/
 	          
 	        } // End 'PURGEON'
 	
@@ -367,7 +393,7 @@ void task_externalcmds(void) {
 	        else if (dmsg[0]=='P' && dmsg[1]=='U' && dmsg[2]=='R' && dmsg[3]=='G' && dmsg[4]=='E' && dmsg[5]=='O' && dmsg[6]=='F' && dmsg[7]=='F') { // if dmg is PURGEOFF
 	        
 	        // turns OFF solenoids and thrusters
-	        csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
+	      /*  csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");
 	        csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");
 	        OS_Delay(200);
 	        csk_io23_low(); csk_uart0_puts("A OFF!\r\n");
@@ -376,7 +402,7 @@ void task_externalcmds(void) {
 	        //csk_io21_low(); csk_uart0_puts("D OFF!\r\n");
 	        csk_io19_low(); csk_uart0_puts("E OFF!\r\n");
 	        //csk_io16_low(); csk_uart0_puts("F OFF!\r\n");
-	        csk_uart0_puts("END - Full Propulsion Tank Purge!\r\n");
+	        csk_uart0_puts("END - Full Propulsion Tank Purge!\r\n");*/
 	        
 	          
 	        } // End 'PURGEOFF'

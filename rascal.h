@@ -2,12 +2,17 @@
 #define __main_h
 #define PI 3.14159265359
 
+// Pumpkin Salvo Headers
+#include "csk_sd.h"
+#include "thin_usr.h"
+
+// fixed point libraries for Boeing Quaternion values
+#include <libq.h>
+
 // defines Boeing serial frame constants, taken from PDG
 #define FRAME_SIZE 258  //	indicates total frame size (in bytes)
 #define DATA_SIZE 256	//	indicates size of data message (in bytes)
 #define FLAG 0x7e		//	indicates flag for frame start or end
-#define OUT_START_FLAG_SIZE 26
-#define OUT_END_FLAG_SIZE 18
 #define DISABLED 0      //  used in conjunction with THRUST_ENABLE_FLAG
 #define ENABLED 1       //  used in conjunction with THRUST_ENABLE_FLAG
 #define IDLE 0          //  used in conjuction with STATUS_FLAG
@@ -36,19 +41,20 @@ typedef struct {
   float zidot;
 } pose;
 
+// In matlab code the x and y axes are swapped, hence body coordinate frame of reference was chosen here
 typedef struct {
   int thruster_Azminus; // thruster A points in -z direction in body coordinate system
   int Azminustime; // time thruster A has burned for (in milliseconds)
-  int thruster_Bxminus; // thruster B points in -x direction in body coordinate system
-  int Bxminustime; // time thruster B has burned for (in milliseconds)
-  int thruster_Cyminus; // thruster C points in -y direction in body coordinate system
-  int Cyminustime; // time thruster C has burned for (in milliseconds)
+  int thruster_Byplus; // thruster B points in -x direction in body coordinate system
+  int Byplustime; // time thruster B has burned for (in milliseconds)
+  int thruster_Cxminus; // thruster C points in -y direction in body coordinate system
+  int Cxminustime; // time thruster C has burned for (in milliseconds)
   int thruster_Dzplus; // thruster D points in +z direction in body coordinate system
   int Dzplustime; // time thruster D has burned for (in milliseconds)
-  int thruster_Explus; // thruster E points in +x direction in body coordinate system
-  int Explustime; // time thruster E has burned for (in milliseconds)
-  int thruster_Fyplus; // thruster F points in +y direction in body coordinate system
-  int Fyplustime; // time thruster F has burned for (in milliseconds)
+  int thruster_Eyminus; // thruster E points in +x direction in body coordinate system
+  int Eyminustime; // time thruster E has burned for (in milliseconds)
+  int thruster_Fxplus; // thruster F points in +y direction in body coordinate system
+  int Fxplustime; // time thruster F has burned for (in milliseconds)
 } thrusterinfo;
 
 /*

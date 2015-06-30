@@ -52,7 +52,7 @@ int main() {
   csk_io42_low();
   
   // Power for FPGA/Imager board! Make sure this gets turned on NOW!
-  csk_io40_high();  
+ // csk_io40_high();
 
   // Do target-specific (e.g., clocks, UARTs) and general 
   //  (e.g., CSK IO) initialization.
@@ -101,29 +101,30 @@ int main() {
 //  OSCreateMsgQ(MSGQ_HETX_P, MQCBP_HETX_P, MsqQBuff, SIZEOF_HE_MSGQ);
   OSCreateMsg(MSG_PRPTONAV_P, (OStypeMsgP) 0); // PRP externalcmd to NAV (thruster request)    
   OSCreateMsg(MSG_QUATERNIONTONAV_P, (OStypeMsgP) 0); //Quaternion info from cmds to NAV
+  OSCreateMsg(MSG_IMAGER_P, (OStypeMsgP) 0); // IMAGER externalcmd to IMAGER (take a picture request)
 
 	//Init SD-Card
 	csk_sd_pwr_on();
 	csk_sd_open();
 	f_initvolume();
-
+/*
 	//In file: 1=>just deployed, 2=>just ejected, 3=>both deployed and ejected true.
 	F_FILE * Deployed_Ejected_SDSave = f_open(STATE_FILE,"r");
 	if(Deployed_Ejected_SDSave) {
-			/*
+			
 			f_close(Deployed_Ejected_SDSave);
 			Deployed_Ejected_SDSave = f_open("DEPEJEC","w");
 			f_seek(Deployed_Ejected_SDSave,0,SEEK_SET);
 			char tmp[1]={3};
 			f_write(tmp,1,1,Deployed_Ejected_SDSave);
 			f_close(Deployed_Ejected_SDSave);
-			Deployed_Ejected_SDSave = f_open("DEPEJEC","r");*/
-			/*f_close(Deployed_Ejected_SDSave);
+			Deployed_Ejected_SDSave = f_open("DEPEJEC","r");
+			f_close(Deployed_Ejected_SDSave);
 			F_FILE* file=f_open("names","w");
 			char tmp[]="Maria Barna\r\nDan Dillon\r\nJim Dreas\r\nWesley Gardner\r\nBryant Gaume\r\nRichard Henry\r\nJoe Kirwen\r\nSteve Massey\r\nTom Moline\r\nTyler Olson\r\nManu Posso\r\nPhillip Reyes\r\nNate Richard\r\nAllison Roland\r\nBob Urberger\r\nDenana Vehab";
 			f_write(tmp,1,strlen(tmp),file);
 			f_close(file);
-			Deployed_Ejected_SDSave = f_open("DEPEJEC","r");*/
+			Deployed_Ejected_SDSave = f_open("DEPEJEC","r");
 		f_seek(Deployed_Ejected_SDSave,0,SEEK_END);
 		unsigned long _eof=f_tell(Deployed_Ejected_SDSave);
 		f_seek(Deployed_Ejected_SDSave,0,SEEK_SET);
@@ -150,6 +151,7 @@ int main() {
 		f_write(SD_SAVESTATE,1,1,Deployed_Ejected_SDSave);
 		f_close(Deployed_Ejected_SDSave);
 	}
+*/
 
   // Enable interrupts (enables UART tx & rx).
   __enable_interrupt();

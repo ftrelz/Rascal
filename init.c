@@ -110,24 +110,27 @@ void init(void) {
   iPPSInput(IN_FN_PPS_U2RX,IN_PIN_PPS_RP10);
   iPPSOutput(OUT_PIN_PPS_RP17,OUT_FN_PPS_U2TX);
   //iPPSInput(IN_FN_PPS_U3RX,IN_PIN_PPS_RP25);   
-  //iPPSOutput(OUT_PIN_PPS_RP22,OUT_FN_PPS_U3TX);  //Old Imager
-  iPPSInput(IN_FN_PPS_U3RX,IN_PIN_PPS_RP22);   
-  iPPSOutput(OUT_PIN_PPS_RP25,OUT_FN_PPS_U3TX);  // Rascal FPGA Imager
+  //iPPSOutput(OUT_PIN_PPS_RP22,OUT_FN_PPS_U3TX);  //Old Imager from Copper
+//iPPSInput(IN_FN_PPS_U3RX,IN_PIN_PPS_RP22);   
+//iPPSOutput(OUT_PIN_PPS_RP25,OUT_FN_PPS_U3TX);  // Rascal FPGA Imager (RX/TX pins flipped)
+  iPPSInput(IN_FN_PPS_U3RX,IN_PIN_PPS_RP25);   
+  iPPSOutput(OUT_PIN_PPS_RP22,OUT_FN_PPS_U3TX);  // Rascal FPGA Imager
   
 /*iPPSInput(IN_FN_PPS_U3RX,IN_PIN_PPS_RP25);
   iPPSOutput(OUT_PIN_PPS_RP22,OUT_FN_PPS_U3TX);*/ //Old Beacon.
 
   // Init UARTs to 9600,N,8,1  or 38400,N,8,1 or 58800,N,8,1
   // UARTs won't transmit until interrupts are enabled ...
-//  csk_uart2_open(UART_9600_N81_MAIN);
+  csk_uart2_open(UART_9600_N81_MAIN);
   csk_uart0_open(UART_115200_N81_MAIN);  // RS-232 to debug/Boeing C2 Bus
   //csk_uart1_open(CSK_UART_9600_N81);    // 
-  csk_uart2_open(CSK_UART_9600_N81);    // Rascal FPGA Imager
+ // csk_uart2_open(CSK_UART_9600_N81);    // Rascal FPGA Imager
 //  csk_uart1_open(UART_38400_N81_MAIN);
   csk_uart0_puts(STR_CRLF STR_CRLF);
   csk_uart0_puts("Pumpkin " STR_CSK_TARGET "." STR_CRLF);
   csk_uart0_puts(STR_VERSION "." STR_CRLF "--Fred Trelz, Donnie Utley, & Denana Vehab" STR_CRLF STR_CRLF);  
 //csk_uart0_puts(STR_WARNING "." STR_CRLF);
+  //csk_io40_high();
     
 } /* init() */
 
