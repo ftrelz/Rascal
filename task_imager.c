@@ -415,6 +415,7 @@ void task_imager(void) {
   while(1) {
     OS_Delay(250);
     
+
      //static const char test[2]={'A','B'};
    // static const char A = 'A';
    // static const char B = 'B';
@@ -422,11 +423,9 @@ void task_imager(void) {
     //csk_uart0_puts(test);
     //csk_uart0_puts("\r\n");
     //csk_uart2_puts(AB);
-   
 
      if(OSReadMsg(MSG_IMAGER_P)) {
 	   imagerCMD=((char*)(OSTryMsg(MSG_IMAGER_P)));
-	   
 	   static char tmp[150];
        sprintf(tmp, "I'm in task_imager!\r\n");
        csk_uart0_puts(tmp);
@@ -448,6 +447,37 @@ void task_imager(void) {
           csk_uart2_putchar(0xCD);
           sprintf(tmp, "I'm in PARTIAL!\r\n");
           csk_uart0_puts(tmp);
+        } else if (imagerCMD[18] == '_' && imagerCMD[19] == 'T' && imagerCMD[20] == 'E' && imagerCMD[21] == 'S' && imagerCMD[22] == 'T') {
+          sprintf(tmp, "I'm in TEST!");
+          csk_uart0_puts(tmp);
+
+          //sprintf(tmp, "%c%c%c%c%c%c%c%c%c%c", 0x6e, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x2f, 0x4a, 0x00, 0x00);
+		  Nop();Nop();Nop();
+
+/*
+		  csk_uart2_putchar(0x6e);//6e
+		  csk_uart2_putchar(0x00);//00
+		  csk_uart2_putchar(0x00);//00
+		  csk_uart2_putchar(0x0b);//0b
+		  csk_uart2_putchar(0x00);//00
+		  csk_uart2_putchar(0x00);//00
+		  csk_uart2_putchar(0x2f);//2f
+		  csk_uart2_putchar(0x4a);//4a
+		  csk_uart2_putchar(0x00);//00
+		  csk_uart2_putchar(0x00);//00
+*/
+
+          csk_uart2_puts("test");
+          Nop();Nop();Nop();
+
+         /* i = 0;
+          while(csk_uart2_count()) {
+	        tmp[i] = csk_uart2_getchar();
+            i++;
+          }
+          Nop();Nop();Nop();
+          csk_uart0_puts(tmp);
+          Nop();Nop();Nop();*/
         }
        
 //    csk_uart0_puts(csk_uart2_getchar());
@@ -470,7 +500,7 @@ void task_imager(void) {
             //sprintf(tmp, "UART COUNT: %d\r\n", csk_uart2_count());
             //csk_uart0_puts(tmp);
             rx_count_flag=0;
-            FULL_IMAGE_SDSave = f_open("FULLIMG", "w");
+            //FULL_IMAGE_SDSave = f_open("FULLIMG", "w");
           }
 
           //csk_uart0_puts("I'm in uart2_count!");

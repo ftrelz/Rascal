@@ -313,6 +313,8 @@ void task_externalcmds(void) {
   //task_nav msg test
  //static char a[256]="PRP11111111500";
 
+  _Q16 x;
+
   // defines and inits POSE_BOEING
   POSE_BOEING.q1 = 0.0045;
   POSE_BOEING.q2 = -0.0022;

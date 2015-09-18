@@ -30,8 +30,8 @@ $Date: 2010-02-13 13:40:21-08 $
 #define TX1_BUFF_SIZE                     260        // 
 #define RX2_BUFF_SIZE                     16          // 
 #define TX2_BUFF_SIZE                     16         // 
-#define RX3_BUFF_SIZE                     512          // 
-#define TX3_BUFF_SIZE                     512         // 
+#define RX3_BUFF_SIZE                     128          // 
+#define TX3_BUFF_SIZE                     128      // 
 #define RX4_BUFF_SIZE                     16        // 
 #define TX4_BUFF_SIZE                     16        // 
 
