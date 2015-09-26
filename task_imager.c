@@ -453,8 +453,9 @@ void task_imager(void) {
 
           //sprintf(tmp, "%c%c%c%c%c%c%c%c%c%c", 0x6e, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x2f, 0x4a, 0x00, 0x00);
 		  Nop();Nop();Nop();
+          //csk_uart2_puts(tmp);
 
-/*
+/* Test packet from Tau software idd*/
 		  csk_uart2_putchar(0x6e);//6e
 		  csk_uart2_putchar(0x00);//00
 		  csk_uart2_putchar(0x00);//00
@@ -465,19 +466,36 @@ void task_imager(void) {
 		  csk_uart2_putchar(0x4a);//4a
 		  csk_uart2_putchar(0x00);//00
 		  csk_uart2_putchar(0x00);//00
+
+
+/* Packet for test video frame
+		  csk_uart2_putchar(0x6e);
+		  csk_uart2_putchar(0x00);
+		  csk_uart2_putchar(0x00);
+		  csk_uart2_putchar(0x25);
+		  csk_uart2_putchar(0x00);
+		  csk_uart2_putchar(0x02);
+		  csk_uart2_putchar(0x92);
+		  csk_uart2_putchar(0xcf);
+		  csk_uart2_putchar(0x00);
+		  csk_uart2_putchar(0x03);
+          csk_uart2_putchar(0x30);
+		  csk_uart2_putchar(0x63);
 */
 
-          csk_uart2_puts("test");
+/*
           Nop();Nop();Nop();
-
-         /* i = 0;
+          //csk_uart2_putchar(0xAB);
+          Nop();Nop();Nop();
+*/
+          i = 0;
           while(csk_uart2_count()) {
 	        tmp[i] = csk_uart2_getchar();
             i++;
           }
           Nop();Nop();Nop();
           csk_uart0_puts(tmp);
-          Nop();Nop();Nop();*/
+          Nop();Nop();Nop();
         }
        
 //    csk_uart0_puts(csk_uart2_getchar());

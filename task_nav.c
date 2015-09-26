@@ -55,6 +55,7 @@ int sign(float x) {
   else return -1;
 }
 
+// needs to be moved to estimator
 void q2dc(three_by_three *C_ItoB)
 {
     int i, j;

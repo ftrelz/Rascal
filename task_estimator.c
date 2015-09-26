@@ -75,6 +75,9 @@ float estimator(pose POSE_EST_PREVIOUS, thrusterChoice, pose POSE_IMG, pose POSE
 
   static int rows_s_hat_prev = 6;
   static int cols_s_hat_prev = 1;
+
+  // s_hat 0-2 = POSE_EST position values (in I coords)
+  // s_hat 3-5 = POSE_EST velocity values (in I coords)
   static float s_hat[6] = {0, 0, 0, 0, 0, 0};  //also POSE_EST
   static float s_hat_previous[6] = {0, 0, 0, 0, 0, 0};
   
@@ -187,9 +190,15 @@ void matrix_add_s_hat(float matrix1[6], float matrix2[6], float matrix3[6], floa
   int i;
   for(i = 0; i < 6; i++)
   {
-    //new s_hat (6x1) 6 element array  
+    //new s_hat (6x1) 6 element array
+	//matrix1 = Ad_LxCdxs_hat_prev
+	//matrix2 = Bd_Ixthrusterchoice
+	//matrix3 = Lxy
+	//answer = s_hat (THIS IS POSE_EST!!!!!!!)
     answer[i] = matrix1[i] + matrix2[i] + matrix3[i];
   }
+
+  
 }
 
 void task_estimator(void) {
@@ -226,6 +235,8 @@ void task_estimator(void) {
   matrix_sub(Ad, LxCd, Ad_LxCd);
   matrix_mul_s_hat_prev(Ad_LxCd, s_hat_prev, Ad_LxCdxs_hat_prev);
   
+  // add code to calculate Bd_I on the fly
+  matrix_mul_Bd_Ixthrusterchoice(float matrix1[][11], int rows1, int col1, float matrix2[][1], int rows2, int col2, float multiply[][1])
   //to be completed: need THRUSTER_INFO, L, and y
   matrix_add_s_hat(Ad_LxCdxs_hat_prev, Bd_Ixthrusterchoice, Lxy, s_hat);
 
@@ -235,6 +246,7 @@ void task_estimator(void) {
     matrix_mul_LxCd(L, rowsL, colsL, Cd, rowsCd, colsCd, LxCd);
     matrix_sub(Ad, LxCd, Ad_LxCd);
     matrix_mul_s_hat_prev(Ad_LxCd, s_hat_prev, Ad_LxCdxs_hat_prev);
+    
 
     /** Tests for POSE**/
 /*
