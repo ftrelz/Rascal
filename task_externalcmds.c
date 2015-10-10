@@ -196,17 +196,6 @@ char* recv_frame(char msg[], int frame_size){
 
 // This function takes and processes command sequences and passes them off accordingly
 void CMDS(const char *a, char * saveName) {
-//	OSSignalBinSem(BINSEM_RAISEPOWERLEVEL_P); 
-	
-    //csk_uart0_puts("task_externalcmds:\t");
-//	char tmp[400]; 
-	
-    //static char tmps[256];
-    //strcpy(tmps, *a);
-
-    /* Why is this Nop here??? */
-    //int I;
-	//for(I=0;I<1000;I++) Nop();
 
 	if (a[0]=='\r' || a[0]=='\n' || a[0]==0) { return; }
     
@@ -232,36 +221,40 @@ void CMDS(const char *a, char * saveName) {
         return;
       } // End - 'PRP' command
 
-      else if (a[12]=='S' && a[13]=='T') { // Check for "STATUS" command header
+      else if (a[12]=='S' && a[13]=='T' && a[14]=='A' && a[15]=='T' && a[16]=='U' && a[17]=='S') { // Check for "STATUS" command header
+        // in meters
+        int CHEESE_SHOP = 3; // distance error when RPO = 10m
+        int PET_SHOP = 10; // distance error when RPO = 100m
+        int error = POSE_EST.xi
         csk_uart0_puts("STATUS OUTPUT\n");
         return;
       }
-      else if (a[12]=='S' && a[13]=='P') { // Check for "SPRT" command header
+      else if (a[12]=='S' && a[13]=='P' && a[14]=='R' && a[15]=='T') { // Check for "SPRT" command header
         csk_uart0_puts("SPRT OUTPUT\n");
         return;
       }
-      else if (a[12]=='G') { // Check for "GO2" command header
+      else if (a[12]=='G' && a[13]=='0' && a[14]=='2') { // Check for "GO2" command header
         csk_uart0_puts("GO2 OUTPUT\n");
         return;
       }
-      else if (a[12]=='P' && a[13]=='O' && a[16]=='I') { // Check for "POSEIMG" command header
+      else if (a[12]=='P' && a[13]=='O' && a[14]=='S'&& a[15]=='E' && a[16]=='I' && a[17]=='M'&& a[18]=='G') { // Check for "POSEIMG" command header
         csk_uart0_puts("POSEIMG OUTPUT\n");
         return;
       }
-      else if (a[12]=='P' && a[13]=='O' && a[16]=='E') { // Check for "POSEEST" command header
+      else if (a[12]=='P' && a[13]=='O' && a[14]=='S'&& a[15]=='E' && a[16]=='E' && a[17]=='S'&& a[18]=='T' ) { // Check for "POSEEST" command header
         csk_uart0_puts("POSEEST OUTPUT\n");
         return;
       }
-      else if (a[12]=='T' && a[18]=='I') { // Check for "THRUSTINFO" command header
+      else if (a[12]=='T' && a[13]=='H' && a[14]=='R'&& a[15]=='U' && a[16]=='S' && a[17]=='T'&& a[18]=='I' && a[19]=='N' && a[20]=='F'&& a[21]=='O') { // Check for "THRUSTINFO" command header
         csk_uart0_puts("THRUSTINFO OUTPUT\n");
         return;
       }
-      else if (a[12]=='T' && a[18]=='_' && a[19]=='E') { // Check for "THRUST_ENABLE" command header
+      else if (a[12]=='T' && a[13]=='H' && a[14]=='R'&& a[15]=='U' && a[16]=='S' && a[17]=='T'&& a[18]=='_' && a[19]=='E' && a[20]=='N'&& a[21]=='A' && a[22]=='B' && a[23]=='L' && a[24]=='E') { // Check for "THRUST_ENABLE" command header
         csk_uart0_puts("THRUSTERS ENABLED\n");
         THRUST_ENABLE_FLAG = ENABLED;
         return;
       }
-      else if (a[12]=='T' && a[18]=='_' && a[19]=='D') { // Check for "THRUST_DISABLE" command header
+      else if (a[12]=='T' && a[13]=='H' && a[14]=='R'&& a[15]=='U' && a[16]=='S' && a[17]=='T'&& a[18]=='_' && a[19]=='D' && a[20]=='I'&& a[21]=='S' && a[22]=='A' && a[23]=='B' && a[24]=='L' && a[24]=='E') { // Check for "THRUST_DISABLE" command header
         csk_uart0_puts("THRUSTERS DISABLED\n");
         THRUST_ENABLE_FLAG = DISABLED;
         return;

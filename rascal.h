@@ -12,7 +12,7 @@
 // defines Boeing serial frame constants, taken from PDG
 #define FRAME_SIZE 258  //	indicates total frame size (in bytes)
 #define DATA_SIZE 256	//	indicates size of data message (in bytes)
-#define FLAG 0x7e		//	indicates flag for frame start or end
+#define FLAG 0x7e		//	indicates (byte stuffed) flag for frame start or end
 #define DISABLED 0      //  used in conjunction with THRUST_ENABLE_FLAG
 #define ENABLED 1       //  used in conjunction with THRUST_ENABLE_FLAG
 #define IDLE 0          //  used in conjuction with STATUS_FLAG
@@ -55,15 +55,8 @@ typedef struct {
   int Eyminustime; // time thruster E has burned for (in milliseconds)
   int thruster_Fxplus; // thruster F points in +y direction in body coordinate system
   int Fxplustime; // time thruster F has burned for (in milliseconds)
+  int thrusterOption;
 } thrusterinfo;
-
-/*
-typedef struct {
-  float x;
-  float y;
-  float z;
-} velocity;
-*/
 
 typedef struct {
   float w; // angular vel of orbit
@@ -74,16 +67,21 @@ typedef struct {
   float xCruise; // x location where the orbit transfer occurs
 } parameters;
 
+typedef struct {
+  float data[3][3];
+} citob;
+
 //extern int * get_POSE_EST(void);
 
 // declare structs
-extern pose POSE_BOEING;
+extern pose POSE_BOEING;  // quaternion data received from Boeing's Colony II Bus
 extern pose POSE_EST;
 extern pose POSE_EST_PREV;
 extern pose POSE_DESIRED;
 extern pose POSE_ACTUAL;
 extern pose POSE_IMG;
 extern thrusterinfo THRUSTER_INFO;
+extern citob C_ItoB;  // used in task_nav and task_estimator?
 
 // defines THRUST_ENABLE_FLAG
 // DISABLED = 0

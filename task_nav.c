@@ -37,16 +37,17 @@ $Date: 2009-11-02 00:45:07-08 $
 parameters params;
 pose POSE_DESIRED;
 thrusterinfo THRUSTER_INFO;
-float C_ItoB[3][3];
 static float BThrust[3][11];
 //static float deltaVB[3][11];
 typedef struct _three_by_eleven {
 	float data[3][11];
 } three_by_eleven;
 
+/*
 typedef struct _three_by_three {
   float data[3][3];
 } three_by_three;
+*/
 
 // used in yHoldPotential
 int sign(float x) {
@@ -55,45 +56,7 @@ int sign(float x) {
   else return -1;
 }
 
-// needs to be moved to estimator
-void q2dc(three_by_three *C_ItoB)
-{
-    int i, j;
-  // used to multiply array values by struct values
-  float poseValues[3][3];
-  poseValues[0][0] = POSE_BOEING.q1 * POSE_BOEING.q1;
-  poseValues[0][1] = POSE_BOEING.q2 * POSE_BOEING.q1;
-  poseValues[0][2] = POSE_BOEING.q3 * POSE_BOEING.q1;
-  poseValues[1][0] = POSE_BOEING.q1 * POSE_BOEING.q2;
-  poseValues[1][1] = POSE_BOEING.q2 * POSE_BOEING.q2;
-  poseValues[1][2] = POSE_BOEING.q3 * POSE_BOEING.q2;
-  poseValues[2][0] = POSE_BOEING.q3 * POSE_BOEING.q1;
-  poseValues[2][1] = POSE_BOEING.q3 * POSE_BOEING.q2;
-  poseValues[2][2] = POSE_BOEING.q3 * POSE_BOEING.q3;
-  // find in q2dc line 13, identity matrix
-  const float eye[3][3] = {{1.000, 0.000, 0.000},
-                           {0.000, 1.000, 0.000},
-                           {0.000, 0.000, 1.000}};
-  // find in q2dc line 12
-  const float Q[3][3] = {{0, -POSE_BOEING.q3, POSE_BOEING.q2},
-                         {POSE_BOEING.q3, 0, -POSE_BOEING.q1},
-                         {-POSE_BOEING.q2, POSE_BOEING.q1, 0}};
-  float ans[3][3];
-  // first term of calculation on line 13 of q2dc, term before +
-  float firstTerm[3][3];
-  // middle term of calculation on line 13 of q2dc, term between + and -
-  float middleTerm[3][3];
-  for(i = 0; i < 3; i++)
-  {
-    for(j = 0; j < 3; j++)
-    {
-      firstTerm[i][j] = (2.0 * (POSE_BOEING.q4 * POSE_BOEING.q4) - 1) * eye[i][j];
-      middleTerm[i][j] = 2.0 * poseValues[i][j]; 
-      ans[i][j] = firstTerm[i][j] + middleTerm[i][j] - ((2*POSE_BOEING.q4)*Q[i][j]);
-      C_ItoB->data[i][j] = ans[i][j];
-    }
-  }
-}
+
 
 /*
 // Calculates inital values for dqdt
@@ -200,7 +163,8 @@ void matrix_mul_vErr_BxdeltaVB(float matrix1[], float matrix2[][11], float p_sco
   
 }
 
-
+/* 
+  -- yHoldPotential function isn't used due to using it inline in selectThruster below (re: ARRAY DECAY!!) --
 void yHoldPotential(parameters *params) {
   float yError = POSE_EST.yi - POSE_DESIRED.yi;
   float O = (2/PI)*(atanf(yError/5));
@@ -218,8 +182,10 @@ void yHoldPotential(parameters *params) {
     }
   }
 }
+*/
 
-int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
+//int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
+int selectThruster(three_by_eleven *deltaVB) {  
   int numThrustOptions = 11;
   int c, d;
   float score[3];
@@ -259,7 +225,7 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
 
     for ( c = 0 ; c < 3 ; c++ ) {
       for ( d = 0 ; d < 3 ; d++ ){
-        sum = sum + (-C_ItoB->data[c][d] * POSE_values[d]);
+        sum = sum + (-C_ItoB.data[c][d] * POSE_values[d]);
       }  
  
       vErr_B[c] = sum;
@@ -304,7 +270,7 @@ int selectThruster(three_by_eleven *deltaVB, three_by_three *C_ItoB) {
    and for how long (in milliseconds).
    Called from switch(selectthruster) when thrusters are turned off
 */
-void updateTHRUSTER_INFO(int one, int two, int three, int four, int five, int six, int seven, int eight, int nine, int ten, int eleven, int twelve) {
+void updateTHRUSTER_INFO(int one, int two, int three, int four, int five, int six, int seven, int eight, int nine, int ten, int eleven, int twelve, int thrusterOption) {
   THRUSTER_INFO.thruster_Azminus = one;
   THRUSTER_INFO.Azminustime = two;
   THRUSTER_INFO.thruster_Byplus = three;
@@ -317,6 +283,7 @@ void updateTHRUSTER_INFO(int one, int two, int three, int four, int five, int si
   THRUSTER_INFO.Eyminustime = ten;
   THRUSTER_INFO.thruster_Fxplus = eleven;
   THRUSTER_INFO.Fxplustime = twelve;
+  THRUSTER_INFO.thrusterOption = thrusterOption;
 } // END updateTHRUSTER_INFO
 
 
@@ -381,28 +348,7 @@ static three_by_eleven deltaVB;
 
 memcpy(deltaVB.data, tmp_deltaVB, sizeof(float[3][11]));
 
-// value for i=2 in Matlab sim
 
-/*
-static float tmp_C_ItoB[3][3] = {{-0.6733, 0.7070, 0.2164},
-                            {-0.7208, -0.6929, 0.0209},
-                            {0.1648, -0.1419, 0.9761}};
-
-
-static float tmp_C_ItoB[3][3] = {{1.0000, -0.0058, -0.0069},
-                            {0.0059, 1.0000, 0.0076},
-                            {0.0068, -0.0076, 0.9999}};
-*/
-
-
-static float tmp_C_ItoB[3][3] = {{0.0000, 1.000, 0.0000},
-                            {-1.0000, 0.0000, 0.0000},
-                            {0.0000, 0.0000, 1.0000}};
-
-
-static three_by_three C_ItoB;
-
-memcpy(C_ItoB.data, tmp_C_ItoB, sizeof(float[3][3]));
   
 // all possible thruster combinations
 static float tmp_BThrust[3][11] = {{0.0000, 1.0000, -1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 1.0000, 1.0000, -1.0000, -1.0000},
@@ -434,12 +380,12 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
     if (THRUST_ENABLE_FLAG == ENABLED) {
 	    // Looks for non-zero values in POSE_DESIRED to begin movement towards secondary spacecraft
 	    if (POSE_DESIRED.xi != 0 || POSE_DESIRED.yi != 0 || POSE_DESIRED.zi != 0) {
-	      thrusterOption = selectThruster(&deltaVB, &C_ItoB);
+	      thrusterOption = selectThruster(&deltaVB);
 
           // Update THRUSTER_INFO with thruster option from selectThruster
           // we are deciding to do this after the thruster has actually been fired
 
-	      q2dc(&C_ItoB);
+	      
 	      // char tmp[20];
 	      //sprintf(tmp, "This is x: %d\r\n", thrusterOption);
 	      //csk_uart0_puts(tmp);
@@ -466,38 +412,38 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
                 // No thrust option, do nothing
                 break;
 	          case 1:
-	            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
+	            csk_io16_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
 	            break;
 	          case 2:
-	            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
+	            csk_io17_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
 	            break;
 	          case 3:
-	            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+	            csk_io18_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
 	            break;
 	          case 4:
-	            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+	            csk_io19_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
 	            break;
 	          case 5:
-	            csk_io21_high(); csk_uart0_puts("D ON! (+Z-Body axis)\r\n");
+	            csk_io21_high(); csk_uart0_puts("D ON! (Z+ Body axis)\r\n");
 	            break;
 	          case 6:
-	            csk_io23_high(); csk_uart0_puts("A ON! (-Z-Body axis)\r\n");
+	            csk_io23_high(); csk_uart0_puts("A ON! (Z- Body axis)\r\n");
 	            break;
 	          case 7:
-	            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
-	            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+	            csk_io16_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
+	            csk_io18_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
 	            break;
 	          case 8:
-	            csk_io16_high(); csk_uart0_puts("F ON! (+X-Body axis)\r\n");
-	            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+	            csk_io16_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
+	            csk_io19_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
 	            break;
 	          case 9:
-	            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
-	            csk_io18_high(); csk_uart0_puts("B ON! (+Y-Body axis)\r\n");
+	            csk_io17_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
+	            csk_io18_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
 	            break;
 	          case 10:
-	            csk_io17_high(); csk_uart0_puts("C ON! (-X-Body axis)\r\n");
-	            csk_io19_high(); csk_uart0_puts("E ON! (-Y-Body axis)\r\n");
+	            csk_io17_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
+	            csk_io19_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
 	            break;
 	        }
 	        
@@ -512,52 +458,52 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	         switch(thrusterOption) {
               case 0:
                 // Update THRUSTER_INFO - set everything to zeroes since no thruster was selected
-                //THRUSTER_INFO = (struct thrusterinfo){0,0,0,0,0,0,0,0,0,0,0,0};
-                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,0,0);
+                //THRUSTER_INFO = (struct thrusterinfo){0,0,0,0,0,0,0,0,0,0,0,0, thrustOption};
+                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 1:
-	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,1,thrustTime);
+	            csk_io16_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
+                updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,1,thrustTime, thrusterOption);
                 break;
 	          case 2:
-	            csk_io17_low(); csk_uart0_puts("C OFf! (-X-Body axis)\r\n");
-                updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,0,0,0,0);
+	            csk_io17_low(); csk_uart0_puts("C OFf! (X- Body axis)\r\n");
+                updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,0,0,0,0, thrusterOption);
 	            break;
 	          case 3:
-	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,0,0);
+	            csk_io18_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 4:
-	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,0,0);
+	            csk_io19_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,0,0, thrusterOption);
                 break;
 	          case 5:
-	            csk_io21_low(); csk_uart0_puts("D OFF! (+Z-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,0,0,0,0,1,thrustTime,0,0,0,0);
+	            csk_io21_low(); csk_uart0_puts("D OFF! (Z+ Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,1,thrustTime,0,0,0,0, thrusterOption);
                 break;
 	          case 6:
-	            csk_io23_low(); csk_uart0_puts("A OFF! (-Z-Body axis)\r\n");
-	            updateTHRUSTER_INFO(1,thrustTime,0,0,0,0,0,0,0,0,0,0);
+	            csk_io23_low(); csk_uart0_puts("A OFF! (Z- Body axis)\r\n");
+	            updateTHRUSTER_INFO(1,thrustTime,0,0,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 7:
-	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,1,thrustTime);
+	            csk_io16_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
+	            csk_io18_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,1,thrustTime, thrusterOption);
                 break;
 	          case 8:
-	            csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,1,thrustTime);
+	            csk_io16_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
+	            csk_io19_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,1,thrustTime, thrusterOption);
                 break;
 	          case 9:
-	            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
-	            csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,1,thrustTime,1,thrustTime,0,0,0,0,0,0);
+	            csk_io17_low(); csk_uart0_puts("C OFF! (X- Body axis)\r\n");
+	            csk_io18_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,1,thrustTime,1,thrustTime,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 10:
-	            csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
-	            csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
-	            updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,1,thrustTime,0,0);
+	            csk_io17_low(); csk_uart0_puts("C OFF! (X- Body axis)\r\n");
+	            csk_io19_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,1,thrustTime,0,0, thrusterOption);
                 break;
 	        }
 	      	      
