@@ -164,7 +164,7 @@ void matrix_mul_Bd_Ixthrusterchoice(float matrix1[][11], int rows1, int col1, fl
   // matrix2 is the B_Thrust analog from the MatLab code
   // all matrix2 values are result of thruster combination selection times .001 and are measured in Newtons
   float matrix2[3][1];
-  int rows2, col2;
+  int rows2 = 3, col2 = 1;
   // matrix1 = Bd_I (6x11)
   // matrix2 = thrusterChoice
   int c, d, k;
@@ -350,11 +350,11 @@ void matrix_add_s_hat(float matrix1[6], float matrix2[6], float matrix3[6], floa
   }
 } // end matrix_add_s_hat 
 
-char * int2bin(int i)
+char * int2bin(long i)
 {
-  size_t bits = sizeof(int) * CHAR_BIT;
+  size_t bits = sizeof(long) * CHAR_BIT;
 
-  char * str = malloc(bits + 1);
+  char str[33];
   if(!str) return NULL;
   str[bits] = 0;
 
@@ -367,28 +367,50 @@ char * int2bin(int i)
 }
 
 void task_estimator(void) {
-  
+
   unsigned long x;
   char* ans;
-  unsigned long boeing_quat = 759242844;
+  unsigned long boeing_quat = 4294859922, quat_float = 0;
 
-  ans = int2bin(boeing_quat);
-  printf("%s\n", ans);
-  x = boeing_quat;
-  unsigned long quat_float;
-  quat_float = x & 3221225472;
-  quat_float = quat_float >> 14;
-  x = x & 1073741823;
-  x = x >> 14;
-  quat_float = x | quat_float;
-  
-  
-  ans = int2bin(quat_float);
-  
-  _Q16 fpTest;
-  fpTest = _itofQ16((_Q16) quat_float);
+  if (boeing_quat & 2147483648) {  
+      ans = int2bin(boeing_quat);
+	  //csk_uart0_puts("%s\n", ans);
+	  csk_uart0_puts(ans);
+	  x = boeing_quat;
+	  quat_float = x & 3221225472;
+	  quat_float = quat_float >> 14;
+      quat_float = quat_float | 0xFFFe0000;
+	  x = x & 1073741823;
+	  x = x >> 14;
+	  quat_float = x | quat_float;
+  } else {
+	  ans = int2bin(boeing_quat);
+	  //csk_uart0_puts("%s\n", ans);
+	  csk_uart0_puts(ans);
+	  x = boeing_quat;
+	  quat_float = x & 3221225472;
+	  quat_float = quat_float >> 14;
+	  x = x & 1073741823;
+	  x = x >> 14;
+	  quat_float = x | quat_float;
+  }  
 
-  printf("%s\n%ld\n", ans, quat_float);
+  quat_float++;
+  //ans = int2bin(quat_float);
+  
+  _Q16 fpTest, anothertest;
+  fpTest = (_Q16)quat_float;
+  float test;
+  test = _itofQ16(fpTest);
+  anothertest = _Q16ftoi(-0.0001);
+  x = sizeof(float);
+
+  Nop(); Nop(); Nop();
+  //csk_uart0_puts("%s\n%ld\n", ans, quat_float);
+  //csk_uart0_puts(ans);
+  //csk_uart0_puts("\n");
+  //sprintf(ans, "%ld\n", quat_float);
+  //csk_uart0_puts(ans);
 
   
   // defines and inits POSE_EST

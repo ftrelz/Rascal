@@ -113,10 +113,10 @@ unsigned int makeHex(char char1, char char2) {
 }
 
 // init THRUST_ENABLE_FLAG to be DISABLED
-THRUST_ENABLE_FLAG = DISABLED;
+int THRUST_ENABLE_FLAG = DISABLED;
 
 // init STATUS-FLAG to be IDLE
-STATUS_FLAG = IDLE;
+int STATUS_FLAG = IDLE;
 
 void BroadcastOrSave(char a[], char * fName){
 	if (!fName) {
@@ -222,31 +222,68 @@ void CMDS(const char *a, char * saveName) {
       } // End - 'PRP' command
 
       else if (a[12]=='S' && a[13]=='T' && a[14]=='A' && a[15]=='T' && a[16]=='U' && a[17]=='S') { // Check for "STATUS" command header
-        // in meters
+        // in meters - Monty Python fans rejoice!!!
         int CHEESE_SHOP = 3; // distance error when RPO = 10m
         int PET_SHOP = 10; // distance error when RPO = 100m
-        int error = POSE_EST.xi
-        csk_uart0_puts("STATUS OUTPUT\n");
+        int error = POSE_EST.xi - POSE_DESIRED.xi; // using correct Body coordinates (not Matlab coords) -- 20151009 DJU
+         
+		// Need to implement stuffing these into the serial frame for transmission
+		if (POSE_DESIRED.xi == 10) {
+		  if (error > CHEESE_SHOP) {
+		    csk_uart0_puts("Status: 01\n");
+		  } else if (error <= CHEESE_SHOP && error >= 0) {
+		    csk_uart0_puts("Status: 00\n");
+		  } else {
+		    csk_uart0_puts("Status: 02\n");
+		  }
+		} else if (POSE_DESIRED.xi == 100) {
+		  if (error > PET_SHOP) {
+		    csk_uart0_puts("Status: 01\n");
+		  } else if (error <= PET_SHOP) {
+		    csk_uart0_puts("Status: 00\n");
+		  } else {
+		    csk_uart0_puts("Status: 02\n");
+		  }
+		}
         return;
       }
       else if (a[12]=='S' && a[13]=='P' && a[14]=='R' && a[15]=='T') { // Check for "SPRT" command header
-        csk_uart0_puts("SPRT OUTPUT\n");
+        static char cmd[DATA_SIZE];
+		memcpy(cmd, a, DATA_SIZE*sizeof(char));
+        //csk_uart0_puts(cmd);
+	    //csk_uart0_puts("\r\n");
+        OSSignalMsg(MSG_PRPTONAV_P,(OStypeMsgP) (cmd));  // passes command to task_nav as it's "listening" for this
         return;
       }
-      else if (a[12]=='G' && a[13]=='0' && a[14]=='2') { // Check for "GO2" command header
-        csk_uart0_puts("GO2 OUTPUT\n");
+      else if (a[12]=='G' && a[13]=='O' && a[14]=='2') { // Check for "GO2" command header
+        int newx, newy, newz, i;
+		char temp[4];
+		memcpy(temp, (a+15), 3);
+	    temp[3] = NULL;
+	    POSE_DESIRED.xi = (float)atoi(temp);
+		memcpy(temp, (a+18), 3);
+	    temp[3] = NULL;
+	    POSE_DESIRED.yi = (float)atoi(temp);
+		memcpy(temp, (a+21), 3);
+	    temp[3] = NULL;
+	    POSE_DESIRED.zi = (float)atoi(temp);
         return;
       }
       else if (a[12]=='P' && a[13]=='O' && a[14]=='S'&& a[15]=='E' && a[16]=='I' && a[17]=='M'&& a[18]=='G') { // Check for "POSEIMG" command header
-        csk_uart0_puts("POSEIMG OUTPUT\n");
+        char temp[80];
+		sprintf(temp, "IMG%03d%03d%03d\n", (int)POSE_IMG.xi, (int)POSE_IMG.yi, (int)POSE_IMG.zi);
         return;
       }
       else if (a[12]=='P' && a[13]=='O' && a[14]=='S'&& a[15]=='E' && a[16]=='E' && a[17]=='S'&& a[18]=='T' ) { // Check for "POSEEST" command header
-        csk_uart0_puts("POSEEST OUTPUT\n");
+        char temp[80];
+		sprintf(temp, "EST%03d%03d%03d\n", (int)POSE_EST.xi, (int)POSE_EST.yi, (int)POSE_EST.zi);
         return;
       }
       else if (a[12]=='T' && a[13]=='H' && a[14]=='R'&& a[15]=='U' && a[16]=='S' && a[17]=='T'&& a[18]=='I' && a[19]=='N' && a[20]=='F'&& a[21]=='O') { // Check for "THRUSTINFO" command header
-        csk_uart0_puts("THRUSTINFO OUTPUT\n");
+        char temp[80];
+		sprintf(temp, "INFO%01d%01d%01d%01d%01d%01d%01d%01d\n", THRUSTER_INFO.thruster_Azminus, THRUSTER_INFO.thruster_Byplus,
+																THRUSTER_INFO.thruster_Cxminus, THRUSTER_INFO.thruster_Dzplus,
+																THRUSTER_INFO.thruster_Eyminus, THRUSTER_INFO.thruster_Fxplus);
         return;
       }
       else if (a[12]=='T' && a[13]=='H' && a[14]=='R'&& a[15]=='U' && a[16]=='S' && a[17]=='T'&& a[18]=='_' && a[19]=='E' && a[20]=='N'&& a[21]=='A' && a[22]=='B' && a[23]=='L' && a[24]=='E') { // Check for "THRUST_ENABLE" command header
@@ -271,7 +308,7 @@ void CMDS(const char *a, char * saveName) {
       }
       
      }
-     else
+/*     else
      {
        long int fixedquat[4];
        char conversionarray[4];
@@ -285,7 +322,7 @@ void CMDS(const char *a, char * saveName) {
          fixedquat[i] = (long int)conversionarray;
          Nop();
        }
-     }
+     }*/
     
 	//At this point, no command has been recognized, as it would have returned if it had been.
 	//char tmps[80];
@@ -306,7 +343,7 @@ void task_externalcmds(void) {
   //task_nav msg test
  //static char a[256]="PRP11111111500";
 
-  _Q16 x;
+  //_Q16 x;
 
   // defines and inits POSE_BOEING
   POSE_BOEING.q1 = 0.0045;
