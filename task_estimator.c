@@ -35,6 +35,9 @@ $Date: 2009-11-02 00:45:07-08 $
 //define pi for calcualtions
 //#define PI 3.14159265359
 
+// used to transmit message to task_externalcmds for processing and sending
+extern void tx_frame(char msg[], int msg_size);
+
 // defines POSE_EST from rascal.h
 pose POSE_EST;
 citob C_ItoB;
@@ -181,74 +184,74 @@ void matrix_mul_Bd_Ixthrusterchoice(float matrix1[][11], int rows1, int col1, fl
 		matrix2[0][0] = 0.001;
 		matrix2[1][0] = 0.0;
 		matrix2[2][0] = 0.0;
-	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
+	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,1,thrustTime, thrusterOption);
 	    break;
 	  case 2:
 		matrix2[0][0] = -0.001;
 		matrix2[1][0] = 0.0;
 		matrix2[2][0] = 0.0;
-	    //csk_io17_low(); csk_uart0_puts("C OFf! (-X-Body axis)\r\n");
+	    //csk_io17_low(); csk_uart0_puts("C OFf! (-X-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,0,0,0,0, thrusterOption);
 	    break;
 	  case 3:
 		matrix2[0][0] = 0.0;
 		matrix2[1][0] = 0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,0,0, thrusterOption);
 	    break;
 	  case 4:
 		matrix2[0][0] = 0.0;
 		matrix2[1][0] = -0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,0,0, thrusterOption);
 	    break;
 	  case 5:
 		matrix2[0][0] = 0.0;
 		matrix2[1][0] = 0.0;
 		matrix2[2][0] = 0.001;
-	    //csk_io21_low(); csk_uart0_puts("D OFF! (+Z-Body axis)\r\n");
+	    //csk_io21_low(); csk_uart0_puts("D OFF! (+Z-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,0,0,1,thrustTime,0,0,0,0, thrusterOption);
 	    break;
 	  case 6:
 		matrix2[0][0] = 0.0;
 		matrix2[1][0] = 0.0;
 		matrix2[2][0] = -0.001;
-	    //csk_io23_low(); csk_uart0_puts("A OFF! (-Z-Body axis)\r\n");
+	    //csk_io23_low(); csk_uart0_puts("A OFF! (-Z-Body axis)");
 	    //updateTHRUSTER_INFO(1,thrustTime,0,0,0,0,0,0,0,0,0,0, thrusterOption);
 	    break;
 	  case 7:
 		matrix2[0][0] = 0.001;
 		matrix2[1][0] = 0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)");
+	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,1,thrustTime, thrusterOption);
 	    break;
 	  case 8:
 		matrix2[0][0] = 0.001;
 		matrix2[1][0] = -0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)\r\n");
-	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+	    //csk_io16_low(); csk_uart0_puts("F OFF! (+X-Body axis)");
+	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,1,thrustTime, thrusterOption);
 	    break;
 	  case 9:
 		matrix2[0][0] = -0.001;
 		matrix2[1][0] = 0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
-	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)\r\n");
+	    //csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)");
+	    //csk_io18_low(); csk_uart0_puts("B OFF! (+Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,1,thrustTime,1,thrustTime,0,0,0,0,0,0, thrusterOption);
 	    break;
 	  case 10:
 		matrix2[0][0] = -0.001;
 		matrix2[1][0] = -0.001;
 		matrix2[2][0] = 0.0;
-	    //csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)\r\n");
-	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)\r\n");
+	    //csk_io17_low(); csk_uart0_puts("C OFF! (-X-Body axis)");
+	    //csk_io19_low(); csk_uart0_puts("E OFF! (-Y-Body axis)");
 	    //updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,1,thrustTime,0,0, thrusterOption);
 	    break;
 	}
@@ -274,11 +277,12 @@ void matrix_mul_Bd_Ixthrusterchoice(float matrix1[][11], int rows1, int col1, fl
    This is not a direct matrix to matrix multiplication because of second array being 6 elements */
 void matrix_mul_s_hat_prev(float matrix1[][6], float matrix2[], float multiply[])
 {
-  // Referenced arrays:
-  // matrix1 = Ad_LxCd
-  // matrix2 = s_hat_prev
-  // matrix3 = Ad_LxCdxs_hat_prev
-  
+ /*  Referenced arrays:
+   matrix1 = Ad_LxCd
+   matrix2 = s_hat_prev
+   matrix3 = Ad_LxCdxs_hat_prev
+ */
+ 
   int c, d;
   float sum;
  
@@ -375,7 +379,7 @@ void task_estimator(void) {
   if (boeing_quat & 2147483648) {  
       ans = int2bin(boeing_quat);
 	  //csk_uart0_puts("%s\n", ans);
-	  csk_uart0_puts(ans);
+	  //csk_uart0_puts(ans);
 	  x = boeing_quat;
 	  quat_float = x & 3221225472;
 	  quat_float = quat_float >> 14;
@@ -386,7 +390,7 @@ void task_estimator(void) {
   } else {
 	  ans = int2bin(boeing_quat);
 	  //csk_uart0_puts("%s\n", ans);
-	  csk_uart0_puts(ans);
+	  //csk_uart0_puts(ans);
 	  x = boeing_quat;
 	  quat_float = x & 3221225472;
 	  quat_float = quat_float >> 14;
@@ -405,14 +409,7 @@ void task_estimator(void) {
   anothertest = _Q16ftoi(-0.0001);
   x = sizeof(float);
 
-  Nop(); Nop(); Nop();
-  //csk_uart0_puts("%s\n%ld\n", ans, quat_float);
-  //csk_uart0_puts(ans);
-  //csk_uart0_puts("\n");
-  //sprintf(ans, "%ld\n", quat_float);
-  //csk_uart0_puts(ans);
-
-  
+    
   // defines and inits POSE_EST
   //intial values for quaternion part of POSE_EST taken from line 84 of Sat3DDeliverable
   POSE_EST.q1 = 0.000;
@@ -554,21 +551,7 @@ void task_estimator(void) {
     /****** end s_hat (POSE_EST) calculations) ******/
 	// q2dc() is LAST in ESTIMATOR calculation realm - per Matlab and Fred
     q2dc();
-    
-    /** Tests for POSE**/
-/*
-    char str[100];
-    csk_uart0_puts("\r\nPOSE_BOEING from EST:\r\n");
-    //sprintf(str, "%d,%d,%d,%d,%d,%d,%d\r\n", POSE_EST.xi++, POSE_EST.yi++, POSE_EST.zi++,POSE_EST.q1++,POSE_EST.q2++,POSE_EST.q3++,POSE_EST.q4++);
-    sprintf(str, "%f,%f,%f,%f,%f,%f,%f\r\n", POSE_BOEING.xi++, POSE_BOEING.yi++, POSE_BOEING.zi++,POSE_BOEING.q1++,POSE_BOEING.q2++,POSE_BOEING.q3++,POSE_BOEING.q4++);
-    //sprintf(str, "%d   %d", POSE_EST.xi,POSE_BOEING.xi);
-    csk_uart0_puts(str);
-    csk_uart0_puts("END POSE_EST\r\n");
-    //csk_uart0_puts(STR_CRLF "POSE_BOEING.xi: ");
-    //csk_uart0_puts((char *)POSE_EST.xi);
-*/    
-    /**END Tests for POSE **/
-
+  
 /*
     //FROM MATLAB CODE -variables declared as floats
 	xi1 = xi + dt*xdoti ;
@@ -585,18 +568,7 @@ void task_estimator(void) {
 	ydoti=ydoti1;
 	zdoti=zdoti1;
 */
-	// Ask (?) Boeing for quaternion (need to figure out how this is implemented)
-
-	// Propagate position and velocity states 
-
-
-	// Listen for BINSEM (?) of image updates  -talk with Nick/Bob/Swartwout about this
 	
-	// And fix the estimation accordingly (MAS will help)
-
-	// Make sure to have velocity and position in BODY coordinates
-	// available to other tasks
-
   } /* while */
 } /* task_estimator() */
 

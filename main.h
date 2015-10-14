@@ -58,8 +58,8 @@ extern csk_status_t csk_status;
 //extern char strTmp[];
 //static int I2CSPEED; 			//This is set in task_i2c.
 #define MSG_PRPTONAV_P            OSECBP(1)
-#define MSG_QUATERNIONTONAV_P     OSECBP(1)
-#define MSG_IMAGER_P              OSECBP(8)
+#define MSG_QUATERNIONTONAV_P     OSECBP(2)
+#define MSG_IMAGER_P              OSECBP(3)
 //#define BINSEM_COP_ARG_P   	  	  OSECBP(5)
 //#define MSG_GETLINES_P   		  OSECBP(10)
 //#define MSG_HETOSDCARD_P   		  OSECBP(11)
@@ -74,8 +74,8 @@ extern csk_status_t csk_status;
 //#define BINSEM_VUC_TURN_ON_P	  OSECBP(11)
 //#define BINSEM_VUC_TURN_OFF_P	  OSECBP(12)
 //#define MSG_EDITCMDSCH_P   		  OSECBP(13)
-//#define MSGQ_HETX_P               OSECBP(14)
-//#define MQCBP_HETX_P               OSMQCBP(1)
+#define MSGQ_TX_P               OSECBP(4)
+#define MQCBP_TX_P               OSMQCBP(1)
 
 #endif /* __main_h */
 

@@ -132,8 +132,8 @@ get good data -- COMPLETE: Switching pins did not give good data on uart1 or 2
   //csk_uart2_open(UART_9600_N81_MAIN);
   //csk_uart2_open(UART_58800_N81_MAIN);
   //csk_uart2_open(UART_57600_N81_MAIN);
-  csk_uart0_open(UART_115200_N81_MAIN);
-//csk_uart0_open(UART_9600_N81_MAIN);  // RS-232 to debug/Boeing C2 Bus
+  csk_uart0_open(UART_115200_N81_MAIN); // RS-232 to debug/Boeing C2 Bus
+//csk_uart0_open(UART_9600_N81_MAIN);  
   csk_uart1_open(UART_9600_N81_MAIN);    // 
   csk_uart2_open(UART_58800_N81_MAIN);    // Rascal FPGA Imager
 //  csk_uart1_open(UART_38400_N81_MAIN);

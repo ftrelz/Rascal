@@ -12,6 +12,9 @@
 // Our headers
 #include "rascal.h"
 
+// used to transmit message to task_externalcmds for processing and sending
+extern void tx_frame(char msg[], int msg_size);
+
 // define POSE_IMG
 pose POSE_IMG;
 
@@ -410,7 +413,7 @@ void task_imager(void) {
   
 
   static char* imagerCMD; //static char to receive "message" from external_cmds (imager cmd)
-  F_FILE* FULL_IMAGE_SDSave;
+  //F_FILE* FULL_IMAGE_SDSave;
  
   while(1) {
     OS_Delay(250);
@@ -421,38 +424,38 @@ void task_imager(void) {
    // static const char B = 'B';
     //static const char* AB = "AB";
     //csk_uart0_puts(test);
-    //csk_uart0_puts("\r\n");
+    //csk_uart0_puts("");
     //csk_uart2_puts(AB);
 
      if(OSReadMsg(MSG_IMAGER_P)) {
 	   imagerCMD=((char*)(OSTryMsg(MSG_IMAGER_P)));
 	   static char tmp[150];
-       sprintf(tmp, "I'm in task_imager!\r\n");
-       csk_uart0_puts(tmp);
+       //sprintf(tmp, "I'm in task_imager!");
+       //csk_uart0_puts(tmp);
 	        
 	   // Start message verification (for sanity (AND pointer) check)
 	  if (imagerCMD[12]=='I' && imagerCMD[13]=='M' && imagerCMD[14]=='A' && imagerCMD[15] == 'G' && imagerCMD[16] == 'E' && imagerCMD[17] == 'R') { //if a (beings with IMAGER!!!) -- sanity check
         if (imagerCMD[18]=='_' && imagerCMD[19]=='F' && imagerCMD[20]=='U' && imagerCMD[21]=='L' && imagerCMD[22]=='L') { //if a has the flag FULL
-           sprintf(tmp, "I'm in FULL!\r\n");
-           csk_uart0_puts(tmp);
+           //sprintf(tmp, "I'm in FULL!");
+          // csk_uart0_puts(tmp);
            //sprintf(tmp, "%c", 0xAB);
            //tmp[0] = 0xAB;
 		   //tmp[1] = 0;
            //while(1){ csk_uart2_putchar(0xAB);  }
            //csk_uart2_puts(tmp);
-           csk_uart2_putchar(0xAB); 
-           csk_uart0_putchar(0xAB);
+           //csk_uart2_putchar(0xAB); 
+           //csk_uart0_putchar(0xAB);
         }
         else if (imagerCMD[18]=='_' && imagerCMD[19]=='P' && imagerCMD[20]=='A' && imagerCMD[21]=='R' && imagerCMD[22]=='T' && imagerCMD[23]=='I' && imagerCMD[24]=='A' && imagerCMD[25]=='L' ){//if a has the flag PARTIAL
-          csk_uart2_putchar(0xCD);
-          sprintf(tmp, "I'm in PARTIAL!\r\n");
-          csk_uart0_puts(tmp);
+          //csk_uart2_putchar(0xCD);
+          //sprintf(tmp, "I'm in PARTIAL!");
+          //csk_uart0_puts(tmp);
         } else if (imagerCMD[18] == '_' && imagerCMD[19] == 'T' && imagerCMD[20] == 'E' && imagerCMD[21] == 'S' && imagerCMD[22] == 'T') {
-          sprintf(tmp, "I'm in TEST!");
-          csk_uart0_puts(tmp);
+          //sprintf(tmp, "I'm in TEST!");
+          //csk_uart0_puts(tmp);
 
           //sprintf(tmp, "%c%c%c%c%c%c%c%c%c%c", 0x6e, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x2f, 0x4a, 0x00, 0x00);
-		  Nop();Nop();Nop();
+		 // Nop();Nop();Nop();
           //csk_uart2_puts(tmp);
 
 /* Test packet from Tau software idd*/
@@ -488,6 +491,7 @@ void task_imager(void) {
           //csk_uart2_putchar(0xAB);
           Nop();Nop();Nop();
 */
+/* For testing...
           i = 0;
           while(csk_uart2_count()) {
 	        tmp[i] = csk_uart2_getchar();
@@ -496,9 +500,10 @@ void task_imager(void) {
           Nop();Nop();Nop();
           csk_uart0_puts(tmp);
           Nop();Nop();Nop();
-        }
-       
-//    csk_uart0_puts(csk_uart2_getchar());
+        
+   ...end testing */
+     
+      } // end else ( TEST )
 
       int waitTmp=1; //ENTER: Will wait until something is received, and store it in a.
       while(waitTmp) {
@@ -507,15 +512,11 @@ void task_imager(void) {
 		  //strcpy(a,"");
           static int rx_count_flag=1;
           int rx_count;
-		  i=0;
-          for (i = 0; i < 1000; i++)
-          {
-            Nop();
-          } 
+		 
 		while(csk_uart2_count() && i<162) {
         //while(csk_uart2_count()  && i<300000) {
           if(rx_count_flag) {
-            //sprintf(tmp, "UART COUNT: %d\r\n", csk_uart2_count());
+            //sprintf(tmp, "UART COUNT: %d", csk_uart2_count());
             //csk_uart0_puts(tmp);
             rx_count_flag=0;
             //FULL_IMAGE_SDSave = f_open("FULLIMG", "w");
@@ -529,9 +530,9 @@ void task_imager(void) {
           while(csk_uart2_count() && j < 512) {
 		    a[j]=csk_uart2_getchar();
           //j = csk_uart2_getchar();
-            char temp[150];
-            sprintf(temp, "%x ", a);
-            csk_uart0_puts(temp);
+           // char temp[150];
+           // sprintf(temp, "%x ", a);
+           // csk_uart0_puts(temp);
             //csk_uart0_putchar(a[i]);
             j++;
           }
@@ -548,17 +549,18 @@ void task_imager(void) {
          unsigned long int s;
          //s = csk_uart2_count();
          //f_seek(FULL_IMAGE_SDSave, 0, F_SEEK_END);
-         s = f_tell(FULL_IMAGE_SDSave);
-         sprintf(tmp, "%lu\n", s);
-         csk_uart0_puts(tmp);
+        // s = f_tell(FULL_IMAGE_SDSave);
+        // sprintf(tmp, "%lu\n", s);
+        // csk_uart0_puts(tmp);
 
-	     } // end while(csk_uart2_count() && i<162)
+	   } // end while(csk_uart2_count() && i<162)
 
          waitTmp = 0;
-         f_close(FULL_IMAGE_SDSave);
+        // f_close(FULL_IMAGE_SDSave);
        }
-       csk_uart0_puts("Im out of while(waitTmp)!!");
-       //int s;
+       //csk_uart0_puts("Im out of while(waitTmp)!!");
+      
+        //int s;
        //s = f_filelength("IMAGEF");
        //sprintf(tmp, "%ul", s);
        //csk_uart0_puts(tmp);

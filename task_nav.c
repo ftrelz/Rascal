@@ -31,6 +31,9 @@ $Date: 2009-11-02 00:45:07-08 $
 
 #define NEWTONS	0.001
 
+// used to transmit message to task_externalcmds for processing and sending
+extern void tx_frame(char msg[], int msg_size);
+
 //velocity vDesire;
 //velocity rSense_I;
 //velocity v;
@@ -373,7 +376,7 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
   static int thrustTime = 100; //milliseconds - defined at compile time
   //static int i, j;
   static char* prpCMD; //static char to receive "message" from external_cmds
-  //static char prpCMD[DATA_SIZE];
+  static char cmd_tmp[TX_MSG_SIZE];
 
   while(1) {
     OS_Delay(250);
@@ -387,13 +390,13 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 
 	      
 	      // char tmp[20];
-	      //sprintf(tmp, "This is x: %d\r\n", thrusterOption);
-	      //csk_uart0_puts(tmp);
+	      //sprintf(tmp, "This is x: %d", thrusterOption);
+	      //sprintf(cmd_tmp, tmp);
 	/*
 	      for(i = 0; i < 3; i++) {
 	        for(j = 0; j < 3; j++) {
 	          sprintf(tmp, "%f ", C_ItoB.data[i][j]);
-	          csk_uart0_puts(tmp);
+	          sprintf(cmd_tmp, tmp);
 	        }
 	      }
 	*/
@@ -401,10 +404,11 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
           // Maybe add some sort of flag error checking system to verify firing of an individual thruster
 	      if (thrusterOption >= 1 && thrusterOption <=10) {
 	 
-	        csk_uart0_puts("Thrusters ON!\r\n");
-	        csk_io21_high(); csk_uart0_puts("S1 ON!\r\n");
-	        csk_io18_high(); csk_uart0_puts("S2 ON!\r\n");
 	        
+	        csk_io27_high(); // S1 ON!
+	        csk_io30_high(); // S2 ON!
+	        
+
 	        OS_Delay(220);  //delay of about 2s to pressurize veins - per Bryant
 	        
 	        switch(thrusterOption) {
@@ -412,48 +416,48 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
                 // No thrust option, do nothing
                 break;
 	          case 1:
-	            csk_io20_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
+	            csk_io28_high(); sprintf(cmd_tmp, "F ON! (X+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 2:
-	            csk_io24_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
+	            csk_io24_high(); sprintf(cmd_tmp, "C ON! (X- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 3:
-	            csk_io23_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
+	            csk_io25_high(); sprintf(cmd_tmp, "B ON! (Y+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 4:
-	            csk_io17_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
+	            csk_io31_high(); sprintf(cmd_tmp, "E ON! (Y- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 5:
-	            csk_io16_high(); csk_uart0_puts("D ON! (Z+ Body axis)\r\n");
+	            csk_io32_high(); sprintf(cmd_tmp, "D ON! (Z+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 6:
-	            csk_io22_high(); csk_uart0_puts("A ON! (Z- Body axis)\r\n");
+	            csk_io26_high(); sprintf(cmd_tmp, "A ON! (Z- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 7:
-	            csk_io20_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
-	            csk_io23_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
+	            csk_io28_high();
+	            csk_io25_high(); sprintf(cmd_tmp, "F ON! (X+ Body axis)B ON! (Y+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 8:
-	            csk_io20_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");
-	            csk_io17_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
+	            csk_io28_high();
+	            csk_io31_high(); sprintf(cmd_tmp, "F ON! (X+ Body axis)E ON! (Y- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 9:
-	            csk_io24_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
-	            csk_io23_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");
+	            csk_io24_high();
+	            csk_io25_high(); sprintf(cmd_tmp, "C ON! (X- Body axis)B ON! (Y+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	          case 10:
-	            csk_io24_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");
-	            csk_io17_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");
+	            csk_io24_high();
+	            csk_io31_high(); sprintf(cmd_tmp, "C ON! (X- Body axis)E ON! (Y- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 	            break;
 	        }
 	        
 	        OS_Delay(10); // fire thrusters for 100ms
 	
 	         // turn off main solenoids
-	         csk_io21_low(); csk_uart0_puts("S1 OFF!\r\n");
+	         csk_io27_low();
 	         // commented out OS_Delay as Dr. Swartwout believes we can shut these off immediately 
              //OS_Delay(100);
-	         csk_io18_low(); csk_uart0_puts("S2 OFF!\r\n");
+	         csk_io30_low(); sprintf(cmd_tmp, "S1 OFF!S2 OFF!");
 	
 	         // turn off thrusters
 	         switch(thrusterOption) {
@@ -463,47 +467,47 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
                 updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 1:
-	            csk_io20_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
+	            csk_io28_low(); sprintf(cmd_tmp, "F OFF! (X+ Body axis)");
                 updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,0,0,1,thrustTime, thrusterOption);
                 break;
 	          case 2:
-	            csk_io24_low(); csk_uart0_puts("C OFF (X- Body axis)\r\n");
+	            csk_io24_low(); sprintf(cmd_tmp, "C OFF (X- Body axis)");
                 updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,0,0,0,0, thrusterOption);
 	            break;
 	          case 3:
-	            csk_io23_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            csk_io25_low(); sprintf(cmd_tmp, "B OFF! (Y+ Body axis)");
 	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 4:
-	            csk_io17_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            csk_io31_low(); sprintf(cmd_tmp, "E OFF! (Y- Body axis)");
 	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,0,0, thrusterOption);
                 break;
 	          case 5:
-	            csk_io16_low(); csk_uart0_puts("D OFF! (Z+ Body axis)\r\n");
+	            csk_io32_low(); sprintf(cmd_tmp, "D OFF! (Z+ Body axis)");
 	            updateTHRUSTER_INFO(0,0,0,0,0,0,1,thrustTime,0,0,0,0, thrusterOption);
                 break;
 	          case 6:
-	            csk_io22_low(); csk_uart0_puts("A OFF! (Z- Body axis)\r\n");
+	            csk_io26_low(); sprintf(cmd_tmp, "A OFF! (Z- Body axis)");
 	            updateTHRUSTER_INFO(1,thrustTime,0,0,0,0,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 7:
-	            csk_io20_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
-	            csk_io23_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            csk_io28_low();
+	            csk_io25_low(); sprintf(cmd_tmp, "F OFF! (X+ Body axis)B OFF! (Y+ Body axis)");
 	            updateTHRUSTER_INFO(0,0,1,thrustTime,0,0,0,0,0,0,1,thrustTime, thrusterOption);
                 break;
 	          case 8:
-	            csk_io20_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");
-	            csk_io17_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            csk_io28_low();
+	            csk_io31_low(); sprintf(cmd_tmp, "F OFF! (X+ Body axis)E OFF! (Y- Body axis)");
 	            updateTHRUSTER_INFO(0,0,0,0,0,0,0,0,1,thrustTime,1,thrustTime, thrusterOption);
                 break;
 	          case 9:
-	            csk_io24_low(); csk_uart0_puts("C OFF! (X- Body axis)\r\n");
-	            csk_io23_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");
+	            csk_io24_low();
+	            csk_io25_low(); sprintf(cmd_tmp, "C OFF! (X- Body axis)B OFF! (Y+ Body axis)");
 	            updateTHRUSTER_INFO(0,0,1,thrustTime,1,thrustTime,0,0,0,0,0,0, thrusterOption);
                 break;
 	          case 10:
-	            csk_io24_low(); csk_uart0_puts("C OFF! (X- Body axis)\r\n");
-	            csk_io17_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");
+	            csk_io24_low();
+	            csk_io31_low(); sprintf(cmd_tmp, "C OFF! (X- Body axis)E OFF! (Y- Body axis)");
 	            updateTHRUSTER_INFO(0,0,0,0,1,thrustTime,0,0,1,thrustTime,0,0, thrusterOption);
                 break;
 	        }
@@ -549,11 +553,8 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	            TIMEOUT_MULTIPLE++;
 	            burn_time -= 255;
 	          }
-	          sprintf(tmp, "Burn time is: %d deciseconds\r\n", burn_time_ds);
-	          csk_uart0_puts(tmp);
-	          sprintf(tmp, "Burn time is: %d system ticks  TIMEOUT_MULTIPLE: %d\r\n", burn_time, TIMEOUT_MULTIPLE);
-	          csk_uart0_puts(tmp);
-	
+	          sprintf(tmp, "Burn time is: %d decisecondsBurn time is: %d system ticks  TIMEOUT_MULTIPLE: %d", burn_time_ds, burn_time, TIMEOUT_MULTIPLE);
+	          tx_frame(cmd_tmp, TX_MSG_SIZE);
 	       
 	        
 	          /** 21 Nov 2014 - DJU
@@ -568,18 +569,20 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
                **/
 	          // turns ON appropriate thruster(s)
 	          
-              csk_uart0_puts("Thrusters ON!\r\n");
-	          if (prpCMD[4] == '1') {csk_io21_high(); csk_uart0_puts("S1 ON!\r\n");}
-	          if (prpCMD[6] == '1') {csk_io18_high(); csk_uart0_puts("S2 ON!\r\n");}
-	          
+              sprintf(cmd_tmp, "Thrusters ON!");
+	          if (prpCMD[4] == '1') csk_io27_high();
+	          if (prpCMD[6] == '1') csk_io30_high();
+	          sprintf(cmd_tmp, "Thrusters ON!S1 ON!S2 ON!");
+              tx_frame(cmd_tmp, TX_MSG_SIZE);
+
 	          OS_Delay(100);  //delay of about 1s to pressurize veins - per Bryant
 	
-	          if (prpCMD[3] == '1') {csk_io22_high(); csk_uart0_puts("A ON! (Z- Body axis)\r\n");}
-	          if (prpCMD[8] == '1') {csk_io23_high(); csk_uart0_puts("B ON! (Y+ Body axis)\r\n");}
-	          if (prpCMD[9] == '1') {csk_io24_high(); csk_uart0_puts("C ON! (X- Body axis)\r\n");}
-	          if (prpCMD[5] == '1') {csk_io16_high(); csk_uart0_puts("D ON! (Z+ Body axis)\r\n");}
-	          if (prpCMD[7] == '1') {csk_io17_high(); csk_uart0_puts("E ON! (Y- Body axis)\r\n");}
-	          if (prpCMD[10]== '1') {csk_io20_high(); csk_uart0_puts("F ON! (X+ Body axis)\r\n");}
+	          if (prpCMD[3] == '1') {csk_io26_high(); sprintf(cmd_tmp, "A ON! (Z- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[8] == '1') {csk_io25_high(); sprintf(cmd_tmp, "B ON! (Y+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[9] == '1') {csk_io24_high(); sprintf(cmd_tmp, "C ON! (X- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[5] == '1') {csk_io32_high(); sprintf(cmd_tmp, "D ON! (Z+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[7] == '1') {csk_io31_high(); sprintf(cmd_tmp, "E ON! (Y- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[10]== '1') {csk_io28_high(); sprintf(cmd_tmp, "F ON! (X+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
               
 	        
 	          // delay for length of burn_time
@@ -593,32 +596,31 @@ memcpy(BThrust_1.data, tmp_BThrust, sizeof(float[3][11]));
 	          OS_Delay(burn_time); // time left after loop
 	          
 	          // turns OFF appropriate thruster(s)
-	          if (prpCMD[4] == '1') {csk_io22_low(); csk_uart0_puts("S1 OFF!\r\n");}
+	          if (prpCMD[4] == '1') {csk_io27_low(); sprintf(cmd_tmp, "S1 OFF!"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
 	          
 	          OS_Delay(250); // delay of 2.5s to shut S1 valve - per Bryant
-	          if (prpCMD[6] == '1') {csk_io20_low(); csk_uart0_puts("S2 OFF!\r\n");}
+	          if (prpCMD[6] == '1') {csk_io30_low(); sprintf(cmd_tmp, "S2 OFF!"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
 	
-	          if (prpCMD[3] == '1') {csk_io22_low(); csk_uart0_puts("A OFF! (Z- Body axis)\r\n");}
-	          if (prpCMD[8] == '1') {csk_io23_low(); csk_uart0_puts("B OFF! (Y+ Body axis)\r\n");}
-	          if (prpCMD[9] == '1') {csk_io24_low(); csk_uart0_puts("C OFF! (X- Body axis)\r\n");}
-	          if (prpCMD[5] == '1') {csk_io16_low(); csk_uart0_puts("D OFF! (Z+ Body axis)\r\n");}
-	          if (prpCMD[7] == '1') {csk_io17_low(); csk_uart0_puts("E OFF! (Y- Body axis)\r\n");}
-	          if (prpCMD[10]== '1') {csk_io20_low(); csk_uart0_puts("F OFF! (X+ Body axis)\r\n");}
+	          if (prpCMD[3] == '1') {csk_io26_low(); sprintf(cmd_tmp, "A OFF! (Z- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[8] == '1') {csk_io25_low(); sprintf(cmd_tmp, "B OFF! (Y+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[9] == '1') {csk_io24_low(); sprintf(cmd_tmp, "C OFF! (X- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[5] == '1') {csk_io32_low(); sprintf(cmd_tmp, "D OFF! (Z+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[7] == '1') {csk_io31_low(); sprintf(cmd_tmp, "E OFF! (Y- Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
+	          if (prpCMD[10]== '1') {csk_io28_low(); sprintf(cmd_tmp, "F OFF! (X+ Body axis)"); tx_frame(cmd_tmp, TX_MSG_SIZE);}
 	        
-	          csk_uart0_puts("Thrusters OFF!\r\n");
+	          sprintf(cmd_tmp, "Thrusters OFF!");
 	
 	          } else if (prpCMD[12]=='S' && prpCMD[13]=='P' && prpCMD[14]=='R' && prpCMD[15]=='T') {
-			    char tmps[80];
-			    sprintf(tmps, "SPRT IN PROG\n");
-			    csk_uart0_puts(tmps);
+			    sprintf(cmd_tmp, "SPRT IN PROG\n"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 			    csk_io29_high();
-				OS_Delay(200);  // Double check to see how long separation solenoid should be active for
-			    csk_io29_low();
+				OS_Delay(250);  // 3 secs according to Nick
+			    OS_Delay(50);
+				csk_io29_low();
+				sprintf(cmd_tmp, "Solenoid Extended\n"); tx_frame(cmd_tmp, TX_MSG_SIZE);
 			  } else {
 	            char tmps[80];
-		        sprintf(tmps, "Command failed in task_nav: %s", prpCMD);
-		        csk_uart0_puts(tmps);
-	          }
+		        sprintf(cmd_tmp, "Command failed in task_nav: %s", prpCMD); tx_frame(cmd_tmp, TX_MSG_SIZE);
+	          } 
 	        } // END:  if(OSReadMsg(MSG_PRPTONAV_P))
 	
 	    /* COMMENTED OUT TO GET NAV FUNCTIONAL

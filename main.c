@@ -71,10 +71,10 @@ int main() {
 	* 9=Debugging/does nothing
 	*/
   // Create tasks -- MAKE SURE THAT OSTASKS in salvocfg.h IS LARGE ENOUGH!
-  OSCreateTask(task_missionclock,	   TASK_MISSIONCLOCK_P,		 1);
+ // OSCreateTask(task_missionclock,	   TASK_MISSIONCLOCK_P,		 1);
   OSCreateTask(task_externalcmds,      TASK_EXTERNALCMDS_P,      4);
 //  OSCreateTask(task_burnCircuit,	   TASK_BURNCIRCUIT_P,		 6);
-  OSCreateTask(task_I2C,               TASK_I2C_P,               8);
+//  OSCreateTask(task_I2C,               TASK_I2C_P,               8);
   OSCreateTask(task_nav,               TASK_NAV_P,               1);
   OSCreateTask(task_estimator,         TASK_ESTIMATOR_P,         3);
   OSCreateTask(task_imager,            TASK_IMAGER_P,            5);
@@ -99,9 +99,14 @@ int main() {
   // Create message queues
 //  OSgltypeMsgQP MsqQBuff[SIZEOF_HE_MSGQ];
 //  OSCreateMsgQ(MSGQ_HETX_P, MQCBP_HETX_P, MsqQBuff, SIZEOF_HE_MSGQ);
+
   OSCreateMsg(MSG_PRPTONAV_P, (OStypeMsgP) 0); // PRP externalcmd to NAV (thruster request)    
   OSCreateMsg(MSG_QUATERNIONTONAV_P, (OStypeMsgP) 0); //Quaternion info from cmds to NAV
   OSCreateMsg(MSG_IMAGER_P, (OStypeMsgP) 0); // IMAGER externalcmd to IMAGER (take a picture request)
+
+// Next two lines: Creates a Message Queue of 16
+  OSgltypeMsgQP MsqQBuff[16];
+  OSCreateMsgQ(MSGQ_TX_P, MQCBP_TX_P, MsqQBuff, 16);
 
 	//Init SD-Card
 	csk_sd_pwr_on();

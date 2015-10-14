@@ -12,6 +12,7 @@
 // defines Boeing serial frame constants, taken from PDG
 #define FRAME_SIZE 258  //	indicates total frame size (in bytes)
 #define DATA_SIZE 256	//	indicates size of data message (in bytes)
+#define TX_MSG_SIZE 200 // size of MAX outgoing message due to headers,footers,flags and byte stuffing
 #define FLAG 0x7e		//	indicates (byte stuffed) flag for frame start or end
 #define DISABLED 0      //  used in conjunction with THRUST_ENABLE_FLAG
 #define ENABLED 1       //  used in conjunction with THRUST_ENABLE_FLAG
